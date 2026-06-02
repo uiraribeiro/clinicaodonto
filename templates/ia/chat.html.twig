@@ -74,7 +74,7 @@
 
                 {# Mensagens adicionadas via Alpine.js #}
                 <template x-for="msg in mensagens" :key="msg.id">
-                    <div :class="msg.role === 'user' ? 'd-flex justify-content-end mb-3' : 'd-flex mb-3'">
+                    <div :class="msg.role === 'user' ? 'd-flex justify-content-end mb-3' : 'd-flex flex-column mb-3'">
                         <div :class="msg.role === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-ia'"
                              style="max-width:80%">
                             <div x-show="msg.role === 'assistant'" class="small text-muted mb-1">
@@ -82,6 +82,57 @@
                             </div>
                             <div class="small" style="white-space:pre-wrap" x-text="msg.content"></div>
                         </div>
+                        {# Propostas da IA — cards de aprovação #}
+                        <template x-if="msg.propostas && msg.propostas.length > 0">
+                            <div style="max-width:80%" class="mt-2">
+                                <template x-for="(prop, idx) in msg.propostas" :key="idx">
+                                    <div class="card border-warning shadow-sm mb-2" x-show="!prop.aplicada && !prop.rejeitada">
+                                        <div class="card-header bg-warning-subtle py-1 d-flex justify-content-between align-items-center">
+                                            <span class="small fw-semibold">
+                                                <i class="bi bi-robot me-1 text-warning"></i>
+                                                Proposta da IA
+                                                <span x-text="prop.tipo === 'novo_agendamento' ? '— Novo agendamento' : '— Remover agendamento'"></span>
+                                            </span>
+                                            <span class="badge" :class="prop.conflitos_espaco > 0 ? 'bg-danger' : 'bg-success'" x-text="prop.conflitos_espaco > 0 ? 'Conflito detectado' : 'Sem conflito'"></span>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <template x-if="prop.tipo === 'novo_agendamento'">
+                                                <div class="small">
+                                                    <div><strong>Turma:</strong> <span x-text="prop.turma_nome"></span></div>
+                                                    <div><strong>Disciplina:</strong> <span x-text="prop.disciplina_nome"></span></div>
+                                                    <div><strong>Professor:</strong> <span x-text="prop.professor_nome"></span></div>
+                                                    <div><strong>Semana:</strong> <span x-text="prop.semana_numero"></span> &nbsp;
+                                                         <strong>Dia:</strong> <span x-text="['','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][prop.dia_semana]"></span></div>
+                                                    <div><strong>Horário:</strong> <span x-text="prop.hora_inicio"></span>–<span x-text="prop.hora_fim"></span>
+                                                         &nbsp;<strong>Espaço:</strong> <span x-text="prop.espaco_tipo"></span></div>
+                                                    <div x-show="prop.conflitos_espaco > 0" class="text-danger mt-1">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>Há <span x-text="prop.conflitos_espaco"></span> conflito(s) de horário neste espaço.
+                                                    </div>
+                                                </div>
+                                            </template>
+                                            <template x-if="prop.tipo === 'remover_agendamento'">
+                                                <div class="small">
+                                                    <div><span x-text="prop.descricao"></span></div>
+                                                    <div class="text-muted mt-1"><strong>Motivo:</strong> <span x-text="prop.motivo"></span></div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <div class="card-footer bg-transparent py-1 d-flex gap-2">
+                                            <button class="btn btn-success btn-sm py-0 px-2"
+                                                    style="font-size:.75rem"
+                                                    @click="aplicarProposta(prop, idx, msg)">
+                                                <i class="bi bi-check-circle me-1"></i>Aplicar
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                                    style="font-size:.75rem"
+                                                    @click="prop.rejeitada = true">
+                                                <i class="bi bi-x-circle me-1"></i>Rejeitar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </template>
 
@@ -148,11 +199,10 @@ function chatIA() {
             const texto = this.inputMsg.trim();
             if (!texto || this.digitando) return;
 
-            this.mensagens.push({ id: ++this.msgId, role: 'user', content: texto });
+            this.mensagens.push({ id: ++this.msgId, role: 'user', content: texto, propostas: [] });
             this.inputMsg  = '';
             this.digitando = true;
-            await this.$nextTick();
-            this.scrollBaixo();
+            setTimeout(() => this.scrollBaixo(), 30);
 
             try {
                 const data = await apiFetch('/ia/chat', {
@@ -165,16 +215,41 @@ function chatIA() {
                 });
 
                 if (data.erro) {
-                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro: ' + data.erro });
+                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro: ' + data.erro, propostas: [] });
                 } else {
                     if (data.sessao_id) this.sessaoId = data.sessao_id;
-                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: data.resposta });
+                    const propostas = (data.propostas || []).map(p => ({ ...p, aplicada: false, rejeitada: false }));
+                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: data.resposta, propostas });
                 }
             } catch (e) {
-                this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro de comunicação: ' + e.message });
+                this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro de comunicação: ' + e.message, propostas: [] });
             } finally {
                 this.digitando = false;
                 setTimeout(() => this.scrollBaixo(), 50);
+            }
+        },
+
+        async aplicarProposta(prop, idx, msg) {
+            if (!confirm('Aplicar esta proposta na agenda?')) return;
+            try {
+                const data = await apiFetch('/ia/proposta/aplicar', {
+                    method: 'POST',
+                    body: JSON.stringify({ proposta: prop }),
+                });
+                if (data.erro) {
+                    alert('Erro ao aplicar: ' + data.erro);
+                } else {
+                    prop.aplicada = true;
+                    this.mensagens.push({
+                        id: ++this.msgId,
+                        role: 'assistant',
+                        content: '✅ Proposta aplicada com sucesso! ' + (data.sucesso || ''),
+                        propostas: [],
+                    });
+                    setTimeout(() => this.scrollBaixo(), 50);
+                }
+            } catch (e) {
+                alert('Erro de comunicação: ' + e.message);
             }
         },
 

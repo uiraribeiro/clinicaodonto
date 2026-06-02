@@ -345,6 +345,159 @@ class AgendaRepository
     }
 
     // =========================================================================
+    // Editor manual por semana
+    // =========================================================================
+
+    public function getSemanasPorVersao(int $versaoId): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT ss.id, ss.numero_semana, ss.data_inicio, ss.data_fim
+             FROM semanas_semestre ss
+             JOIN agenda_versoes av ON av.semestre_id = ss.semestre_id
+             WHERE av.id = ?
+             ORDER BY ss.numero_semana'
+        );
+        $stmt->execute([$versaoId]);
+        return $stmt->fetchAll();
+    }
+
+    public function getAgendamentosSemanaEditor(int $versaoId, int $semana): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT a.id, a.dia_semana, a.hora_inicio, a.hora_fim, a.espaco_tipo,
+                    a.num_alunos, a.status, a.gerado_por_ia, a.observacoes,
+                    t.id AS turma_id, t.nome AS turma_nome,
+                    d.id AS disciplina_id, d.nome AS disciplina_nome,
+                    p.id AS professor_id, p.nome AS professor_nome,
+                    pr.id AS preceptor_id, pr.nome AS preceptor_nome,
+                    ss.numero_semana, ss.data_inicio AS semana_inicio
+             FROM agendamentos a
+             JOIN semanas_semestre ss ON ss.id = a.semana_id
+             JOIN turmas t            ON t.id  = a.turma_id
+             JOIN disciplinas d       ON d.id  = a.disciplina_id
+             LEFT JOIN professores p  ON p.id  = a.professor_id
+             LEFT JOIN preceptores pr ON pr.id = a.preceptor_id
+             WHERE a.versao_id = ? AND ss.numero_semana = ? AND a.status != "cancelado"
+             ORDER BY a.dia_semana, a.hora_inicio'
+        );
+        $stmt->execute([$versaoId, $semana]);
+        return $stmt->fetchAll();
+    }
+
+    public function getTurmasDisciplinasPendentes(int $versaoId, int $semana): array
+    {
+        $semestreRef = $this->getSemestreRefPorVersao($versaoId);
+        if ($semestreRef === '') {
+            return [];
+        }
+
+        $stmt = $this->pdo->prepare(
+            'SELECT td.turma_id, t.nome AS turma_nome, t.numero_alunos,
+                    td.disciplina_id, d.nome AS disciplina_nome, d.codigo AS disciplina_codigo,
+                    CASE WHEN d.usa_clinica = 1 THEN "clinica" ELSE "laboratorio" END AS espaco_preferido
+             FROM turma_disciplina td
+             JOIN turmas t      ON t.id  = td.turma_id
+             JOIN disciplinas d ON d.id  = td.disciplina_id
+             WHERE td.semestre_ref = ?
+               AND t.ativo = 1
+               AND NOT EXISTS (
+                   SELECT 1
+                   FROM agendamentos a
+                   JOIN semanas_semestre ss ON ss.id = a.semana_id
+                   WHERE a.versao_id = ?
+                     AND ss.numero_semana = ?
+                     AND a.turma_id      = td.turma_id
+                     AND a.disciplina_id = td.disciplina_id
+                     AND a.status       != "cancelado"
+               )
+             ORDER BY t.nome, d.nome'
+        );
+        $stmt->execute([$semestreRef, $versaoId, $semana]);
+        return $stmt->fetchAll();
+    }
+
+    public function findAgendamentoPorId(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT a.*, t.nome AS turma_nome, d.nome AS disciplina_nome,
+                    p.nome AS professor_nome, ss.numero_semana
+             FROM agendamentos a
+             JOIN turmas t ON t.id = a.turma_id
+             JOIN disciplinas d ON d.id = a.disciplina_id
+             LEFT JOIN professores p ON p.id = a.professor_id
+             JOIN semanas_semestre ss ON ss.id = a.semana_id
+             WHERE a.id = ?'
+        );
+        $stmt->execute([$id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function criarAgendamento(array $data, int $usuarioId): int
+    {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO agendamentos
+                (versao_id, semana_id, turma_id, disciplina_id, espaco_tipo, espaco_id,
+                 professor_id, preceptor_id, dia_semana, data_aula, hora_inicio, hora_fim,
+                 num_alunos, status, gerado_por_ia, observacoes, created_by, updated_by)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)'
+        );
+        $stmt->execute([
+            $data['versao_id'],
+            $data['semana_id'],
+            $data['turma_id'],
+            $data['disciplina_id'],
+            $data['espaco_tipo'],
+            $data['espaco_id'],
+            $data['professor_id'] ?: null,
+            $data['preceptor_id'] ?: null,
+            $data['dia_semana'],
+            $data['data_aula'],
+            $data['hora_inicio'],
+            $data['hora_fim'],
+            $data['num_alunos'],
+            'agendado',
+            $data['observacoes'] ?? null,
+            $usuarioId,
+            $usuarioId,
+        ]);
+        return (int)$this->pdo->lastInsertId();
+    }
+
+    public function cancelarAgendamento(int $id, int $usuarioId, string $motivo = ''): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE agendamentos
+             SET status = "cancelado",
+                 observacoes = CASE WHEN ? != "" THEN CONCAT(COALESCE(observacoes,""), "\nCancelado: ", ?) ELSE observacoes END,
+                 updated_by = ?
+             WHERE id = ?'
+        );
+        $stmt->execute([$motivo, $motivo, $usuarioId, $id]);
+    }
+
+    public function getVersoes(): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT av.id, av.numero_versao, av.status, av.descricao,
+                    s.referencia AS semestre_ref, av.created_at
+             FROM agenda_versoes av
+             JOIN semestres s ON s.id = av.semestre_id
+             ORDER BY av.created_at DESC
+             LIMIT 20'
+        );
+        return $stmt->fetchAll();
+    }
+
+    private function getSemestreRefPorVersao(int $versaoId): string
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT s.referencia FROM agenda_versoes av JOIN semestres s ON s.id = av.semestre_id WHERE av.id = ?'
+        );
+        $stmt->execute([$versaoId]);
+        return (string)($stmt->fetchColumn() ?: '');
+    }
+
+    // =========================================================================
     // Helpers privados
     // =========================================================================
 

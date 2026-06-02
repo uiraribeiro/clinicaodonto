@@ -1,0 +1,436 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Editor de Agenda — Semana {{ semana_num }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0"><i class="bi bi-pencil-square me-2 text-primary"></i>Editor de Agenda</h1>
+        <small class="text-muted">
+            Versão #{{ versao.numero_versao }} ({{ versao.status }}) — {{ versao.semestre_ref }}
+        </small>
+    </div>
+    <a href="/agenda" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+
+{# ── Seletor de versão e semana ── #}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+        <form method="GET" action="/agenda/editor" class="row g-2 align-items-end">
+            <div class="col-sm-4">
+                <label class="form-label form-label-sm mb-1">Versão de agenda</label>
+                <select name="versao_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for v in versoes %}
+                        <option value="{{ v.id }}" {% if v.id == versao_id %}selected{% endif %}>
+                            #{{ v.numero_versao }} — {{ v.semestre_ref }} ({{ v.status }}){% if v.descricao %} — {{ v.descricao|slice(0,30) }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <label class="form-label form-label-sm mb-1">Semana</label>
+                <select name="semana" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for s in semanas %}
+                        <option value="{{ s.numero_semana }}" {% if s.numero_semana == semana_num %}selected{% endif %}>
+                            Semana {{ s.numero_semana }} — {{ s.data_inicio|date('d/m') }} a {{ s.data_fim|date('d/m/Y') }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="versao_id" value="{{ versao_id }}">
+            </div>
+            <div class="col-sm-2">
+                <div class="d-flex gap-1">
+                    {% if semana_num > 1 %}
+                        <a href="/agenda/editor?versao_id={{ versao_id }}&semana={{ semana_num - 1 }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    {% endif %}
+                    {% if semana_num < semanas|length %}
+                        <a href="/agenda/editor?versao_id={{ versao_id }}&semana={{ semana_num + 1 }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-sm-3 text-end">
+                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                    <i class="bi bi-calendar-check me-1"></i>{{ total_agendados }} agendados
+                </span>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle ms-1">
+                    <i class="bi bi-clock-history me-1"></i>{{ total_pendentes }} pendentes
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Grade semanal ── #}
+<div class="row g-3 mb-4">
+    {% for dia_num, dia_nome in dias_nomes %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
+                    <strong class="small">{{ dia_nome }}</strong>
+                    {% if semana is not null and semana.data_inicio is defined %}
+                        <span class="text-muted" style="font-size:.75rem">
+                            {{ semana.data_inicio|date_modify('+' ~ (dia_num - 1) ~ ' days')|date('d/m') }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-2">
+                    {% if por_dia[dia_num] is defined and por_dia[dia_num]|length > 0 %}
+                        {% for ag in por_dia[dia_num] %}
+                            <div class="border rounded p-2 mb-2 position-relative
+                                {% if ag.espaco_tipo == 'clinica' %}border-primary bg-primary-subtle{% else %}border-success bg-success-subtle{% endif %}">
+                                {% if ag.gerado_por_ia %}
+                                    <span class="badge bg-secondary position-absolute top-0 end-0 mt-1 me-1" style="font-size:.6rem">IA</span>
+                                {% endif %}
+                                <div class="small fw-semibold text-truncate">{{ ag.turma_nome }}</div>
+                                <div class="small text-muted text-truncate">{{ ag.disciplina_nome }}</div>
+                                <div class="d-flex justify-content-between align-items-center mt-1">
+                                    <span class="small">
+                                        <i class="bi bi-clock me-1"></i>{{ ag.hora_inicio|slice(0,5) }}–{{ ag.hora_fim|slice(0,5) }}
+                                    </span>
+                                    <span class="small">
+                                        <i class="bi bi-{% if ag.espaco_tipo == 'clinica' %}hospital{% else %}flask{% endif %} me-1"></i>{{ ag.espaco_tipo|capitalize }}
+                                    </span>
+                                </div>
+                                {% if ag.professor_nome %}
+                                    <div class="small text-muted mt-1 text-truncate">
+                                        <i class="bi bi-person me-1"></i>{{ ag.professor_nome }}
+                                    </div>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm py-0 px-1"
+                                            style="font-size:.7rem"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalCancelar"
+                                            data-id="{{ ag.id }}"
+                                            data-desc="{{ ag.turma_nome }} / {{ ag.disciplina_nome }} ({{ ag.hora_inicio|slice(0,5) }})">
+                                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted py-3" style="font-size:.8rem">
+                            <i class="bi bi-calendar-x d-block mb-1"></i>Sem agendamentos
+                        </div>
+                    {% endif %}
+
+                    {# Botão adicionar neste dia #}
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm w-100 mt-1"
+                            style="font-size:.75rem"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalAdicionar"
+                            data-dia="{{ dia_num }}"
+                            data-dia-nome="{{ dia_nome }}">
+                        <i class="bi bi-plus-circle me-1"></i>Adicionar
+                    </button>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{# ── Pendentes esta semana ── #}
+{% if pendentes|length > 0 %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-warning-subtle border-warning-subtle d-flex justify-content-between align-items-center py-2">
+        <span class="fw-semibold small">
+            <i class="bi bi-exclamation-triangle me-2 text-warning"></i>
+            Turmas/Disciplinas sem aula na Semana {{ semana_num }}
+        </span>
+        <span class="badge bg-warning text-dark">{{ pendentes|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="small">Turma</th>
+                        <th class="small">Disciplina</th>
+                        <th class="small">Alunos</th>
+                        <th class="small">Espaço preferido</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pendentes %}
+                        <tr>
+                            <td class="small align-middle">{{ p.turma_nome }}</td>
+                            <td class="small align-middle">
+                                {{ p.disciplina_nome }}
+                                {% if p.disciplina_codigo %}
+                                    <span class="text-muted">({{ p.disciplina_codigo }})</span>
+                                {% endif %}
+                            </td>
+                            <td class="small align-middle">{{ p.numero_alunos }}</td>
+                            <td class="small align-middle">
+                                <span class="badge {% if p.espaco_preferido == 'clinica' %}bg-primary-subtle text-primary{% else %}bg-success-subtle text-success{% endif %}">
+                                    {{ p.espaco_preferido }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <button type="button"
+                                        class="btn btn-sm btn-primary py-0 px-2"
+                                        style="font-size:.75rem"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalAdicionar"
+                                        data-turma-id="{{ p.turma_id }}"
+                                        data-turma-nome="{{ p.turma_nome }}"
+                                        data-disciplina-id="{{ p.disciplina_id }}"
+                                        data-disciplina-nome="{{ p.disciplina_nome }}"
+                                        data-num-alunos="{{ p.numero_alunos }}"
+                                        data-espaco="{{ p.espaco_preferido }}">
+                                    <i class="bi bi-calendar-plus me-1"></i>Agendar
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success border-0 shadow-sm">
+    <i class="bi bi-check-circle me-2"></i>
+    Todas as turmas têm pelo menos um agendamento na semana {{ semana_num }}. Ótimo trabalho!
+</div>
+{% endif %}
+
+{# ── Modal: Cancelar agendamento ── #}
+<div class="modal fade" id="modalCancelar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="formCancelar" action="/agenda/editor/agendamento/0/cancelar">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="versao_id" value="{{ versao_id }}">
+                <input type="hidden" name="semana_num" value="{{ semana_num }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-2 text-danger"></i>Cancelar Agendamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">Cancelar: <strong id="cancelarDesc"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label form-label-sm">Motivo (opcional)</label>
+                        <input type="text" name="motivo" class="form-control form-control-sm"
+                               placeholder="Ex: Feriado, professor indisponível...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar cancelamento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ── Modal: Adicionar agendamento ── #}
+<div class="modal fade" id="modalAdicionar" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="/agenda/editor/agendamento">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="versao_id" value="{{ versao_id }}">
+                <input type="hidden" name="semana_num" value="{{ semana_num }}">
+                {% if semana %}
+                    <input type="hidden" name="semana_id" value="{{ semana.id }}">
+                {% endif %}
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-calendar-plus me-2 text-primary"></i>Novo Agendamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Turma</label>
+                            <select name="turma_id" id="selectTurma" class="form-select form-select-sm" required>
+                                <option value="">Selecione...</option>
+                                {% for p in pendentes %}
+                                    <option value="{{ p.turma_id }}"
+                                            data-nome="{{ p.turma_nome }}"
+                                            data-alunos="{{ p.numero_alunos }}">
+                                        {{ p.turma_nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Disciplina</label>
+                            <select name="disciplina_id" id="selectDisciplina" class="form-select form-select-sm" required>
+                                <option value="">Selecione a turma primeiro...</option>
+                                {% for p in pendentes %}
+                                    <option value="{{ p.disciplina_id }}"
+                                            data-turma="{{ p.turma_id }}"
+                                            data-espaco="{{ p.espaco_preferido }}">
+                                        {{ p.disciplina_nome }}{% if p.disciplina_codigo %} ({{ p.disciplina_codigo }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Número de alunos</label>
+                            <input type="number" name="num_alunos" id="inputNumAlunos"
+                                   class="form-control form-control-sm" min="1" max="60" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Dia da semana</label>
+                            <select name="dia_semana" id="selectDia" class="form-select form-select-sm" required>
+                                {% for num, nome in dias_nomes %}
+                                    <option value="{{ num }}">{{ nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label form-label-sm">Hora início</label>
+                            <input type="time" name="hora_inicio" class="form-control form-control-sm"
+                                   value="08:00" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label form-label-sm">Hora fim</label>
+                            <input type="time" name="hora_fim" class="form-control form-control-sm"
+                                   value="12:00" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Espaço</label>
+                            <div class="input-group input-group-sm">
+                                <select name="espaco_tipo" id="selectEspacoTipo" class="form-select form-select-sm" required onchange="atualizarEspacos()">
+                                    <option value="clinica">Clínica</option>
+                                    <option value="laboratorio">Laboratório</option>
+                                </select>
+                                <select name="espaco_id" id="selectEspaco" class="form-select form-select-sm" required>
+                                    {% for c in clinicas %}
+                                        <option value="{{ c.id }}" data-tipo="clinica">{{ c.nome }}</option>
+                                    {% endfor %}
+                                    {% for l in laboratorios %}
+                                        <option value="{{ l.id }}" data-tipo="laboratorio" style="display:none">{{ l.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Professor</label>
+                            <select name="professor_id" class="form-select form-select-sm">
+                                <option value="">Sem professor atribuído</option>
+                                {% for prof in professores %}
+                                    <option value="{{ prof.id }}">{{ prof.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label form-label-sm">Preceptor</label>
+                            <select name="preceptor_id" class="form-select form-select-sm">
+                                <option value="">Sem preceptor atribuído</option>
+                                {% for prec in preceptores %}
+                                    <option value="{{ prec.id }}">{{ prec.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label form-label-sm">Observações</label>
+                            <input type="text" name="observacoes" class="form-control form-control-sm"
+                                   placeholder="Opcional...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-calendar-plus me-1"></i>Criar agendamento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Modal cancelar: preenche ID e descrição
+document.getElementById('modalCancelar').addEventListener('show.bs.modal', function(e) {
+    const btn    = e.relatedTarget;
+    const id     = btn.dataset.id;
+    const desc   = btn.dataset.desc;
+    const form   = document.getElementById('formCancelar');
+    form.action  = `/agenda/editor/agendamento/${id}/cancelar`;
+    document.getElementById('cancelarDesc').textContent = desc;
+});
+
+// Modal adicionar: pré-preenche campos quando aberto de um pendente ou de um dia
+document.getElementById('modalAdicionar').addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    if (!btn) return;
+
+    const turmaId      = btn.dataset.turmaId;
+    const disciplinaId = btn.dataset.disciplinaId;
+    const numAlunos    = btn.dataset.numAlunos;
+    const espaco       = btn.dataset.espaco;
+    const dia          = btn.dataset.dia;
+
+    if (turmaId) {
+        const selTurma = document.getElementById('selectTurma');
+        selTurma.value = turmaId;
+        filtrarDisciplinas(turmaId);
+    }
+    if (disciplinaId) {
+        setTimeout(() => { document.getElementById('selectDisciplina').value = disciplinaId; }, 50);
+    }
+    if (numAlunos) {
+        document.getElementById('inputNumAlunos').value = numAlunos;
+    }
+    if (espaco) {
+        document.getElementById('selectEspacoTipo').value = espaco;
+        atualizarEspacos();
+    }
+    if (dia) {
+        document.getElementById('selectDia').value = dia;
+    }
+});
+
+// Filtra disciplinas pela turma selecionada
+document.getElementById('selectTurma').addEventListener('change', function() {
+    filtrarDisciplinas(this.value);
+    const opt = this.options[this.selectedIndex];
+    if (opt) {
+        document.getElementById('inputNumAlunos').value = opt.dataset.alunos || '';
+    }
+});
+
+function filtrarDisciplinas(turmaId) {
+    const sel = document.getElementById('selectDisciplina');
+    Array.from(sel.options).forEach(opt => {
+        if (opt.value === '') return;
+        const mostrar = !turmaId || opt.dataset.turma === turmaId;
+        opt.hidden = !mostrar;
+        if (mostrar && opt.dataset.espaco) {
+            document.getElementById('selectEspacoTipo').value = opt.dataset.espaco;
+            atualizarEspacos();
+        }
+    });
+    // Seleciona primeiro disponível
+    const primeiro = Array.from(sel.options).find(o => !o.hidden && o.value !== '');
+    if (primeiro) sel.value = primeiro.value;
+}
+
+function atualizarEspacos() {
+    const tipo = document.getElementById('selectEspacoTipo').value;
+    const sel  = document.getElementById('selectEspaco');
+    Array.from(sel.options).forEach(opt => {
+        opt.hidden = opt.dataset.tipo !== tipo;
+    });
+    const primeiro = Array.from(sel.options).find(o => !o.hidden);
+    if (primeiro) sel.value = primeiro.value;
+}
+</script>
+{% endblock %}

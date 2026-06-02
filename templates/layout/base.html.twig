@@ -49,6 +49,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="/agenda/editor" class="nav-link text-white {% if active_menu == 'agenda_editor' %}active bg-primary rounded{% endif %}">
+                    <i class="bi bi-pencil-square me-2"></i>
+                    <span x-show="sidebarOpen">Editor por Semana</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="/ia/chat" class="nav-link text-white {% if active_menu == 'ia' %}active bg-primary rounded{% endif %}">
                     <i class="bi bi-robot me-2"></i>
                     <span x-show="sidebarOpen">IA Copiloto</span>

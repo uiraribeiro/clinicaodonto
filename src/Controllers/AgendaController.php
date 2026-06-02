@@ -188,6 +188,98 @@ final class AgendaController
     }
 
     // =========================================================================
+    // Editor manual por semana
+    // =========================================================================
+
+    public function editor(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $params   = $request->getQueryParams();
+        $versaoId = isset($params['versao_id']) ? (int)$params['versao_id'] : null;
+        $semana   = isset($params['semana']) ? (int)$params['semana'] : null;
+
+        // Descobre a versão padrão (publicada mais recente ou última)
+        $versoes = $this->agendaService->listarTodasVersoes();
+        if (!$versaoId && !empty($versoes)) {
+            foreach ($versoes as $v) {
+                if ($v['status'] === 'publicada') {
+                    $versaoId = (int)$v['id'];
+                    break;
+                }
+            }
+            if (!$versaoId) {
+                $versaoId = (int)$versoes[0]['id'];
+            }
+        }
+
+        if (!$versaoId) {
+            $_SESSION['flash_info'] = 'Nenhuma versão de agenda disponível. Gere uma agenda primeiro.';
+            return $response->withHeader('Location', '/agenda')->withStatus(302);
+        }
+
+        if (!$semana) {
+            $semana = 1;
+        }
+
+        try {
+            $dados = $this->agendaService->getDadosEditor($versaoId, $semana);
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Erro ao carregar editor: ' . $e->getMessage();
+            return $response->withHeader('Location', '/agenda')->withStatus(302);
+        }
+
+        return $this->twig->render($response, 'agenda/editor.html.twig', array_merge($this->ctx(), $dados, [
+            'active_menu' => 'agenda_editor',
+            'versoes'    => $versoes,
+            'versao_id'  => $versaoId,
+            'semana_num' => $semana,
+            'dias_nomes' => [1 => 'Segunda', 2 => 'Terça', 3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'],
+        ]));
+    }
+
+    public function criarAgendamento(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        $data      = (array)$request->getParsedBody();
+        $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
+
+        $versaoId = (int)($data['versao_id'] ?? 0);
+        $semana   = (int)($data['semana_num'] ?? 1);
+
+        try {
+            $this->agendaService->criarAgendamentoManual($data, $usuarioId);
+            $_SESSION['flash_success'] = 'Agendamento criado com sucesso.';
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Erro ao criar agendamento: ' . $e->getMessage();
+        }
+
+        return $response->withHeader(
+            'Location', "/agenda/editor?versao_id={$versaoId}&semana={$semana}"
+        )->withStatus(302);
+    }
+
+    public function cancelarAgendamento(
+        ServerRequestInterface $request,
+        ResponseInterface $response,
+        string $id,
+    ): ResponseInterface {
+        $data      = (array)$request->getParsedBody();
+        $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
+        $motivo    = trim($data['motivo'] ?? '');
+        $versaoId  = (int)($data['versao_id'] ?? 0);
+        $semana    = (int)($data['semana_num'] ?? 1);
+
+        try {
+            $this->agendaService->cancelarAgendamento((int)$id, $usuarioId, $motivo);
+            $_SESSION['flash_success'] = 'Agendamento cancelado.';
+        } catch (\Throwable $e) {
+            $_SESSION['flash_error'] = 'Erro ao cancelar: ' . $e->getMessage();
+        }
+
+        return $response->withHeader(
+            'Location', "/agenda/editor?versao_id={$versaoId}&semana={$semana}"
+        )->withStatus(302);
+    }
+
+    // =========================================================================
     // Helpers
     // =========================================================================
 

@@ -11,45 +11,111 @@ use PDO;
  */
 final class ChatService
 {
-    private const MAX_HISTORICO = 20; // mensagens por sessão
+    private const MAX_HISTORICO  = 20;
+    private const MAX_TOOL_ITERS = 6;
 
     public function __construct(
         private readonly BedrockClient $client,
         private readonly PromptBuilder $prompts,
+        private readonly AgendaTools   $tools,
         private readonly PDO           $pdo,
     ) {}
 
     /**
      * Envia mensagem do usuário e retorna a resposta do assistente.
+     * Quando versaoId é fornecido com modelo Nova, usa tool use para acessar dados reais da agenda.
      *
-     * @param string   $sessaoId  UUID da sessão de chat
-     * @param int      $usuarioId
-     * @param string   $mensagem  Texto do usuário
-     * @param int|null $versaoId  Versão de agenda ativa (opcional, enriquece contexto)
-     * @return array{resposta:string, sessao_id:string}
+     * @return array{resposta:string, sessao_id:string, propostas:array}
      */
     public function enviar(string $sessaoId, int $usuarioId, string $mensagem, ?int $versaoId = null): array
     {
         $historico = $this->carregarHistorico($sessaoId);
         $this->salvarMensagem($sessaoId, $versaoId, $usuarioId, 'user', $mensagem);
 
-        $userPrompt = $versaoId
-            ? $this->prompts->promptContextoChat($versaoId, $mensagem)
-            : $mensagem;
+        $isNova = str_starts_with($_ENV['BEDROCK_MODEL_ID'] ?? '', 'amazon.nova');
 
-        $result = $this->client->invocar(
-            $this->prompts->systemChat(),
-            $userPrompt,
-            $historico,
-            'chat',
-            $versaoId,
-            $usuarioId,
-        );
+        if ($versaoId !== null && $isNova) {
+            [$resposta, $propostas] = $this->enviarComTools($historico, $mensagem, $versaoId, $usuarioId);
+        } else {
+            $userPrompt = $versaoId
+                ? $this->prompts->promptContextoChat($versaoId, $mensagem)
+                : $mensagem;
+            $result    = $this->client->invocar($this->prompts->systemChat(), $userPrompt, $historico, 'chat', $versaoId, $usuarioId);
+            $resposta  = $result['texto'];
+            $propostas = [];
+        }
 
-        $resposta = $result['texto'];
         $this->salvarMensagem($sessaoId, $versaoId, $usuarioId, 'assistant', $resposta);
 
-        return ['resposta' => $resposta, 'sessao_id' => $sessaoId];
+        return ['resposta' => $resposta, 'sessao_id' => $sessaoId, 'propostas' => $propostas];
+    }
+
+    /**
+     * Loop de tool use para Nova: itera chamadas ao modelo até ele parar de usar ferramentas.
+     *
+     * @return array{0:string, 1:array} [texto_final, lista_propostas]
+     */
+    private function enviarComTools(array $historico, string $mensagem, int $versaoId, int $usuarioId): array
+    {
+        $messages = [];
+        foreach ($historico as $h) {
+            $messages[] = ['role' => $h['role'], 'content' => [['text' => $h['content']]]];
+        }
+        $messages[] = ['role' => 'user', 'content' => [['text' => $mensagem]]];
+
+        $toolSpecs = $this->tools->getSpecs();
+        $propostas  = [];
+
+        for ($i = 0; $i < self::MAX_TOOL_ITERS; $i++) {
+            $raw = $this->client->invocarComTools(
+                $this->prompts->systemChatComFerramentas(),
+                $messages,
+                $toolSpecs,
+                $versaoId,
+                $usuarioId,
+            );
+
+            $stopReason    = $raw['stopReason'] ?? 'end_turn';
+            $assistContent = $raw['output']['message']['content'] ?? [['text' => '']];
+
+            $messages[] = ['role' => 'assistant', 'content' => $assistContent];
+
+            if ($stopReason !== 'tool_use') {
+                $texto = implode('', array_map(fn($b) => $b['text'] ?? '', $assistContent));
+                return [trim($texto), $propostas];
+            }
+
+            // Executa cada tool use e devolve resultados
+            $toolResults = [];
+            foreach ($assistContent as $block) {
+                if (!isset($block['toolUse'])) {
+                    continue;
+                }
+                $toolUse   = $block['toolUse'];
+                $toolUseId = $toolUse['toolUseId'] ?? '';
+                $nome      = $toolUse['name']  ?? '';
+                $input     = $toolUse['input'] ?? [];
+
+                $resultJson = $this->tools->executar($nome, $input);
+                $resultArr  = json_decode($resultJson, true) ?? [];
+
+                if (isset($resultArr['proposta'])) {
+                    $propostas[] = $resultArr['proposta'];
+                }
+
+                $toolResults[] = [
+                    'toolResult' => [
+                        'toolUseId' => $toolUseId,
+                        'content'   => [['text' => $resultJson]],
+                        'status'    => 'success',
+                    ],
+                ];
+            }
+
+            $messages[] = ['role' => 'user', 'content' => $toolResults];
+        }
+
+        return ['Limite de chamadas de ferramentas atingido. Tente uma pergunta mais específica.', $propostas];
     }
 
     public function novoSessaoId(): string
@@ -67,7 +133,6 @@ final class ChatService
              LIMIT ' . self::MAX_HISTORICO
         );
         $stmt->execute([$sessaoId]);
-        // Reverter para ordem cronológica
         return array_reverse($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 

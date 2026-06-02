@@ -121,6 +121,10 @@ $app->group('', function ($group) {
         $g->get('/simulacao',               [AgendaController::class, 'simulacao'])->setName('agenda.simulacao');
         $g->post('/simulacao/rodar',        [AgendaController::class, 'rodarSimulacao'])->setName('agenda.simulacao.rodar');
         $g->post('/simulacao/{id}/descartar',[AgendaController::class, 'descartarSimulacao'])->setName('agenda.simulacao.descartar');
+        // Editor manual por semana
+        $g->get('/editor',                  [AgendaController::class, 'editor'])->setName('agenda.editor');
+        $g->post('/editor/agendamento',     [AgendaController::class, 'criarAgendamento'])->setName('agenda.editor.criar');
+        $g->post('/editor/agendamento/{id}/cancelar',[AgendaController::class, 'cancelarAgendamento'])->setName('agenda.editor.cancelar');
     })->add(CsrfMiddleware::class);
 
     // ─── Bedrock / IA ───────────────────────────────────────────────────────────
@@ -131,6 +135,7 @@ $app->group('', function ($group) {
         $g->post('/sugestoes/{id}/rejeitar',[BedrockController::class, 'rejeitarSugestao'])->setName('ia.rejeitar');
         $g->get('/chat',                   [BedrockController::class, 'chatPage'])->setName('ia.chat.page');
         $g->post('/chat',                  [BedrockController::class, 'chat'])->setName('ia.chat');
+        $g->post('/proposta/aplicar',      [BedrockController::class, 'aplicarProposta'])->setName('ia.proposta.aplicar');
     })->add(CsrfMiddleware::class);
 
     // ─── Relatórios ─────────────────────────────────────────────────────────────

@@ -159,6 +159,72 @@ final class BedrockClient
         }
     }
 
+    /**
+     * Envia mensagens com tool use e retorna a resposta bruta do modelo.
+     * Usado pelo ChatService para o loop de tool use com AgendaTools.
+     *
+     * @param string   $systemPrompt
+     * @param array    $messages    Formato Nova: [{role, content: [{text}|{toolUse}|{toolResult}]}]
+     * @param array    $tools       toolConfig.tools no formato Nova
+     * @param int|null $versaoId
+     * @param int|null $usuarioId
+     * @return array Resposta bruta parseada (output, stopReason, usage)
+     */
+    public function invocarComTools(
+        string $systemPrompt,
+        array  $messages,
+        array  $tools,
+        ?int   $versaoId  = null,
+        ?int   $usuarioId = null,
+    ): array {
+        if (!$this->enabled) {
+            return [
+                'output'     => ['message' => ['content' => [['text' => 'Bedrock desabilitado (BEDROCK_ENABLED=false).']]]],
+                'stopReason' => 'end_turn',
+                'usage'      => ['inputTokens' => 0, 'outputTokens' => 0],
+            ];
+        }
+
+        $body = [
+            'messages'        => $messages,
+            'system'          => [['text' => $systemPrompt]],
+            'inferenceConfig' => ['maxTokens' => $this->maxTokens, 'temperature' => $this->temperature],
+            'toolConfig'      => ['tools' => $tools],
+        ];
+
+        $promptHash = hash('sha256', $systemPrompt . json_encode($messages));
+        $inicio     = hrtime(true);
+
+        try {
+            $result = $this->aws->invokeModel([
+                'modelId'     => $this->modelId,
+                'body'        => json_encode($body),
+                'accept'      => 'application/json',
+                'contentType' => 'application/json',
+            ]);
+
+            $duracaoMs = (int)((hrtime(true) - $inicio) / 1_000_000);
+            $resposta  = json_decode($result->get('body')->getContents(), true);
+
+            $tokensIn  = $resposta['usage']['inputTokens']  ?? 0;
+            $tokensOut = $resposta['usage']['outputTokens'] ?? 0;
+
+            $this->registrarLog($versaoId, 'chat_tools', $tokensIn, $tokensOut, $duracaoMs, 'sucesso', null, $promptHash, false);
+
+            return $resposta;
+
+        } catch (AwsException $e) {
+            $duracaoMs = (int)((hrtime(true) - $inicio) / 1_000_000);
+            $msg = $e->getAwsErrorMessage() ?: $e->getMessage();
+            $this->registrarLog($versaoId, 'chat_tools', 0, 0, $duracaoMs, 'erro', $msg, $promptHash, false);
+            throw new \RuntimeException("Bedrock error ({$e->getAwsErrorCode()}): {$msg}", 0, $e);
+        } catch (\Throwable $e) {
+            $duracaoMs = (int)((hrtime(true) - $inicio) / 1_000_000);
+            $this->registrarLog($versaoId, 'chat_tools', 0, 0, $duracaoMs, 'erro', $e->getMessage(), $promptHash, false);
+            throw $e;
+        }
+    }
+
     // =========================================================================
     // Cache Redis
     // =========================================================================

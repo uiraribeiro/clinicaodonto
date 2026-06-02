@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Repositories\SugestaoRepository;
+use App\Services\Bedrock\AgendaTools;
 use App\Services\Bedrock\ChatService;
 use App\Services\Bedrock\SugestaoService;
 use App\Services\CsrfService;
@@ -17,6 +18,7 @@ final class BedrockController
         private readonly Twig               $twig,
         private readonly SugestaoService    $sugestaoService,
         private readonly ChatService        $chatService,
+        private readonly AgendaTools        $agendaTools,
         private readonly SugestaoRepository $sugestaoRepo,
         private readonly CsrfService        $csrfService,
     ) {}
@@ -157,7 +159,33 @@ final class BedrockController
             return $this->json($response, [
                 'resposta'  => $resultado['resposta'],
                 'sessao_id' => $resultado['sessao_id'],
+                'propostas' => $resultado['propostas'] ?? [],
             ]);
+        } catch (\Throwable $e) {
+            return $this->json($response, ['erro' => $e->getMessage()], 500);
+        }
+    }
+
+    /** Aplica uma proposta da IA após aprovação humana explícita. */
+    public function aplicarProposta(
+        ServerRequestInterface $request,
+        ResponseInterface $response,
+    ): ResponseInterface {
+        $data = (array)$request->getParsedBody();
+        if (empty($data)) {
+            $data = (array)(json_decode((string)$request->getBody(), true) ?? []);
+        }
+
+        $proposta  = $data['proposta'] ?? [];
+        $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
+
+        if (empty($proposta) || empty($proposta['tipo'])) {
+            return $this->json($response, ['erro' => 'Proposta inválida.'], 400);
+        }
+
+        try {
+            $resultado = $this->agendaTools->aplicar($proposta, $usuarioId);
+            return $this->json($response, $resultado);
         } catch (\Throwable $e) {
             return $this->json($response, ['erro' => $e->getMessage()], 500);
         }
