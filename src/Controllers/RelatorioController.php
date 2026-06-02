@@ -127,10 +127,9 @@ final class RelatorioController
         ]));
     }
 
-    public function exportar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function exportar(ServerRequestInterface $request, ResponseInterface $response, string $tipo, string $formato): ResponseInterface
     {
-        $tipo    = $args['tipo']    ?? '';
-        $formato = $args['formato'] ?? '';
+        // $tipo e $formato já foram injetados como parâmetros nomeados
 
         $tiposValidos    = ['semana','turma','disciplina','professor','espaco','completo'];
         $formatosValidos = ['pdf','xlsx','csv'];

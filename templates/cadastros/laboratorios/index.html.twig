@@ -14,10 +14,10 @@
         <i class="bi bi-mortarboard me-2 text-primary"></i>Laboratório
     </h4>
     <div class="btn-group btn-group-sm">
-        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/editar" class="btn btn-primary">
+        <a href="/cadastros/laboratorio/{{ laboratorio.id }}/editar" class="btn btn-primary">
             <i class="bi bi-pencil me-1"></i>Editar Laboratório
         </a>
-        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios" class="btn btn-outline-warning">
+        <a href="/cadastros/laboratorio/{{ laboratorio.id }}/bloqueios" class="btn btn-outline-warning">
             <i class="bi bi-slash-circle me-1"></i>Gerenciar Bloqueios
         </a>
     </div>
@@ -85,7 +85,7 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white fw-bold border-bottom d-flex justify-content-between align-items-center">
         <span><i class="bi bi-slash-circle text-warning me-2"></i>Bloqueios Futuros</span>
-        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios" class="btn btn-sm btn-outline-warning">
+        <a href="/cadastros/laboratorio/{{ laboratorio.id }}/bloqueios" class="btn btn-sm btn-outline-warning">
             <i class="bi bi-plus-lg me-1"></i>Adicionar Bloqueio
         </a>
     </div>
@@ -123,7 +123,7 @@
                             </span>
                         </td>
                         <td class="text-center">
-                            <form action="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios/{{ b.id }}/excluir"
+                            <form action="/cadastros/laboratorio/{{ laboratorio.id }}/bloqueios/{{ b.id }}/excluir"
                                   method="POST"
                                   onsubmit="return confirm('Excluir este bloqueio?')">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">

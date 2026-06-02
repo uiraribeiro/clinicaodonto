@@ -86,7 +86,7 @@
                 </template>
 
                 {# Indicador de digitação #}
-                <div x-show="digitando" class="d-flex mb-3">
+                <div x-show="digitando" class="mb-3" style="display:none">
                     <div class="chat-bubble chat-bubble-ia">
                         <span class="typing-dots">
                             <span></span><span></span><span></span>
@@ -109,7 +109,6 @@
                     <textarea
                         x-model="inputMsg"
                         @keydown.enter.exact.prevent="enviarMensagem"
-                        @keydown.enter.shift="/* nova linha */"
                         class="form-control form-control-sm"
                         placeholder="Digite sua pergunta... (Enter para enviar, Shift+Enter para nova linha)"
                         rows="2"
@@ -142,7 +141,7 @@ function chatIA() {
         msgId:     0,
 
         init() {
-            this.scrollBaixo();
+            setTimeout(() => this.scrollBaixo(), 100);
         },
 
         async enviarMensagem() {
@@ -156,7 +155,7 @@ function chatIA() {
             this.scrollBaixo();
 
             try {
-                const res = await apiFetch('/ia/chat', {
+                const data = await apiFetch('/ia/chat', {
                     method: 'POST',
                     body: JSON.stringify({
                         mensagem:  texto,
@@ -164,7 +163,6 @@ function chatIA() {
                         versao_id: this.versaoId || null,
                     }),
                 });
-                const data = await res.json();
 
                 if (data.erro) {
                     this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro: ' + data.erro });
@@ -176,8 +174,7 @@ function chatIA() {
                 this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro de comunicação: ' + e.message });
             } finally {
                 this.digitando = false;
-                await this.$nextTick();
-                this.scrollBaixo();
+                setTimeout(() => this.scrollBaixo(), 50);
             }
         },
 

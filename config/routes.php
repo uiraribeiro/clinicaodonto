@@ -102,7 +102,12 @@ $app->group('', function ($group) {
         $c->get('/semestres',             [AgendaSemestralController::class, 'index'])->setName('semestres.index');
         $c->get('/semestres/novo',        [AgendaSemestralController::class, 'create'])->setName('semestres.create');
         $c->post('/semestres',            [AgendaSemestralController::class, 'store'])->setName('semestres.store');
-        $c->get('/semestres/{id}',        [AgendaSemestralController::class, 'show'])->setName('semestres.show');
+        $c->get('/semestres/{id}',              [AgendaSemestralController::class, 'show'])->setName('semestres.show');
+        $c->get('/semestres/{id}/editar',       [AgendaSemestralController::class, 'edit'])->setName('semestres.edit');
+        $c->post('/semestres/{id}',             [AgendaSemestralController::class, 'update'])->setName('semestres.update');
+        $c->post('/semestres/{id}/bloqueios',                [AgendaSemestralController::class, 'addDiaBloqueado'])->setName('semestres.bloqueio.add');
+        $c->post('/semestres/{id}/bloqueios/{dia_id}/remover',[AgendaSemestralController::class, 'removeDiaBloqueado'])->setName('semestres.bloqueio.remover');
+        $c->post('/semestres/{id}/ativar',                   [AgendaSemestralController::class, 'ativar'])->setName('semestres.ativar');
 
     })->add(CsrfMiddleware::class);
 

@@ -12,7 +12,7 @@
     busca: '',
     periodo: '',
     curso: '',
-    turmas: {{ turmas|json_encode|raw }},
+    turmas: {{ turmas|json_encode }},
     get filtradas() {
         return this.turmas.filter(t => {
             const okBusca = this.busca === '' || t.nome.toLowerCase().includes(this.busca.toLowerCase());

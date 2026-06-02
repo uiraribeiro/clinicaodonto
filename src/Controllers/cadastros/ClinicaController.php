@@ -45,16 +45,20 @@ class ClinicaController
         return $this->twig->render(
             $response,
             'cadastros/clinicas/index.html.twig',
-            $this->ctx(['clinicas' => $clinicas])
+            $this->ctx([
+                'clinicas' => $clinicas,
+                'clinica'  => $clinicas[0] ?? null,
+                'bloqueios' => $clinicas[0]['bloqueios'] ?? [],
+            ])
         );
     }
 
     public function edit(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $clinica = $this->repo->findById((int) $args['id']);
+        $clinica = $this->repo->findById((int) $id);
         if (!$clinica) {
             return $response->withStatus(404);
         }
@@ -69,9 +73,9 @@ class ClinicaController
     public function update(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id      = (int) $args['id'];
+        $id      = (int) $id;
         $clinica = $this->repo->findById($id);
         if (!$clinica) {
             return $response->withStatus(404);
@@ -102,9 +106,9 @@ class ClinicaController
     public function bloqueios(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id      = (int) $args['id'];
+        $id      = (int) $id;
         $clinica = $this->repo->findById($id);
         if (!$clinica) {
             return $response->withStatus(404);
@@ -125,9 +129,9 @@ class ClinicaController
     public function addBloqueio(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id      = (int) $args['id'];
+        $id      = (int) $id;
         $clinica = $this->repo->findById($id);
         if (!$clinica) {
             return $response->withStatus(404);

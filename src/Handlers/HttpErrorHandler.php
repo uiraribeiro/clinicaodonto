@@ -111,7 +111,7 @@ class HttpErrorHandler extends ErrorHandler
         };
     }
 
-    private function determineStatusCode(): int
+    protected function determineStatusCode(): int
     {
         $e = $this->exception;
         return match (true) {

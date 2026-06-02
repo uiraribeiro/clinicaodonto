@@ -94,9 +94,9 @@ final class AgendaController
     public function show(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $id,
     ): ResponseInterface {
-        $versaoId = (int)$args['id'];
+        $versaoId = (int)$id;
         $versao   = $this->agendaService->detalheVersao($versaoId);
 
         if (!$versao) {
@@ -119,9 +119,9 @@ final class AgendaController
     public function publicar(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $id,
     ): ResponseInterface {
-        $versaoId  = (int)$args['id'];
+        $versaoId  = (int)$id;
         $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
 
         try {
@@ -180,9 +180,9 @@ final class AgendaController
     public function descartarSimulacao(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $id,
     ): ResponseInterface {
-        $this->simulacaoService->descartar((int)$args['id']);
+        $this->simulacaoService->descartar((int)$id);
         $_SESSION['flash_success'] = 'Simulação descartada.';
         return $response->withHeader('Location', '/agenda/simulacao')->withStatus(302);
     }

@@ -128,9 +128,9 @@ class UsuarioController
     public function show(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $usuario = $this->repo->findById((int) $args['id']);
+        $usuario = $this->repo->findById((int) $id);
         if (!$usuario) {
             return $response->withStatus(404);
         }
@@ -146,9 +146,9 @@ class UsuarioController
     public function edit(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $usuario = $this->repo->findById((int) $args['id']);
+        $usuario = $this->repo->findById((int) $id);
         if (!$usuario) {
             return $response->withStatus(404);
         }
@@ -168,9 +168,9 @@ class UsuarioController
     public function update(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id      = (int) $args['id'];
+        $id      = (int) $id;
         $data    = (array) $request->getParsedBody();
         $perfis  = $this->repo->findAllPerfis();
         $errors  = [];

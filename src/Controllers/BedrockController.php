@@ -28,9 +28,9 @@ final class BedrockController
     public function sugestoes(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $versao_id,
     ): ResponseInterface {
-        $versaoId  = (int)$args['versao_id'];
+        $versaoId  = (int)$versao_id;
         $sugestoes = $this->sugestaoRepo->findByVersao($versaoId);
         $pendentes = $this->sugestaoRepo->contarPendentes($versaoId);
 
@@ -72,9 +72,9 @@ final class BedrockController
     public function aceitarSugestao(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $id,
     ): ResponseInterface {
-        $id        = (int)$args['id'];
+        $id        = (int)$id;
         $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
 
         $sug = $this->sugestaoRepo->findById($id);
@@ -91,9 +91,9 @@ final class BedrockController
     public function rejeitarSugestao(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args,
+        string $id,
     ): ResponseInterface {
-        $id        = (int)$args['id'];
+        $id        = (int)$id;
         $usuarioId = (int)($_SESSION['usuario_id'] ?? 0);
 
         $sug = $this->sugestaoRepo->findById($id);
@@ -136,7 +136,10 @@ final class BedrockController
         ServerRequestInterface $request,
         ResponseInterface $response,
     ): ResponseInterface {
-        $data      = (array)$request->getParsedBody();
+        $data = (array)$request->getParsedBody();
+        if (empty($data)) {
+            $data = (array)(json_decode((string)$request->getBody(), true) ?? []);
+        }
         $mensagem  = trim($data['mensagem'] ?? '');
         $sessaoId  = trim($data['sessao_id'] ?? '');
         $versaoId  = !empty($data['versao_id']) ? (int)$data['versao_id'] : null;

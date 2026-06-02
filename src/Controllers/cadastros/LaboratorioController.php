@@ -45,16 +45,20 @@ class LaboratorioController
         return $this->twig->render(
             $response,
             'cadastros/laboratorios/index.html.twig',
-            $this->ctx(['laboratorios' => $laboratorios])
+            $this->ctx([
+                'laboratorios' => $laboratorios,
+                'laboratorio'  => $laboratorios[0] ?? null,
+                'bloqueios'    => $laboratorios[0]['bloqueios'] ?? [],
+            ])
         );
     }
 
     public function edit(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $lab = $this->repo->findById((int) $args['id']);
+        $lab = $this->repo->findById((int) $id);
         if (!$lab) {
             return $response->withStatus(404);
         }
@@ -69,9 +73,9 @@ class LaboratorioController
     public function update(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id  = (int) $args['id'];
+        $id  = (int) $id;
         $lab = $this->repo->findById($id);
         if (!$lab) {
             return $response->withStatus(404);
@@ -102,9 +106,9 @@ class LaboratorioController
     public function bloqueios(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id  = (int) $args['id'];
+        $id  = (int) $id;
         $lab = $this->repo->findById($id);
         if (!$lab) {
             return $response->withStatus(404);
@@ -125,9 +129,9 @@ class LaboratorioController
     public function addBloqueio(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id  = (int) $args['id'];
+        $id  = (int) $id;
         $lab = $this->repo->findById($id);
         if (!$lab) {
             return $response->withStatus(404);

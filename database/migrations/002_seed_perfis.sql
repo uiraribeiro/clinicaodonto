@@ -19,7 +19,7 @@ INSERT INTO `perfis` (`slug`, `nome`, `descricao`) VALUES
 -- TROQUE IMEDIATAMENTE APÓS O PRIMEIRO LOGIN
 INSERT INTO `usuarios` (`perfil_id`, `nome`, `email`, `senha_hash`, `ativo`) VALUES
 (1, 'Administrador', 'admin@odonto.local',
- '$2y$12$8KzwqVJKhQxqNrPxVzPfDOu.b5sC5qVJSGiU9u1fGmWdSK9Lx2Yei',
+ '$2y$12$ugmcy3VEY.MScXVPRQkYvepytIlZVJxaDTDv5cPGYJGtAI8ZMlBn.',
  1);
 
 -- Curso padrão

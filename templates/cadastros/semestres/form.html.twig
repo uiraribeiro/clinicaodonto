@@ -94,9 +94,9 @@
                         <label class="form-label fw-semibold">Número de Semanas <span class="text-danger">*</span></label>
                         <input type="number"
                                class="form-control {{ errors.numero_semanas is defined ? 'is-invalid' : '' }}"
-                               name="numero_semanas"
+                               name="num_semanas"
                                x-model.number="semanas"
-                               value="{{ semestre.numero_semanas|default(20) }}"
+                               value="{{ semestre.num_semanas|default(semestre.numero_semanas|default(20)) }}"
                                min="15" max="25" required>
                         <div class="form-text">Recomendado: 20 semanas</div>
                         {% if errors.numero_semanas is defined %}

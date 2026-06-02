@@ -65,9 +65,9 @@ class DisciplinaController
         return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $disciplina = $this->repo->findById((int) $args['id']);
+        $disciplina = $this->repo->findById((int) $id);
         if (!$disciplina) {
             return $response->withStatus(404);
         }
@@ -81,9 +81,9 @@ class DisciplinaController
         ]);
     }
 
-    public function edit(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function edit(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $disciplina = $this->repo->findById((int) $args['id']);
+        $disciplina = $this->repo->findById((int) $id);
         if (!$disciplina) {
             return $response->withStatus(404);
         }
@@ -98,9 +98,9 @@ class DisciplinaController
         ]);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id   = (int) $args['id'];
+        $id   = (int) $id;
         $data = (array) $request->getParsedBody();
 
         $disciplina = $this->repo->findById($id);
@@ -127,9 +127,9 @@ class DisciplinaController
         return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
     }
 
-    public function destroy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $id = (int) $id;
         $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
         $_SESSION['flash_success'] = 'Disciplina desativada com sucesso.';
         return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);

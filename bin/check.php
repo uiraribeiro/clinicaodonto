@@ -31,9 +31,13 @@ PHP_MAJOR_VERSION >= 8 && PHP_MINOR_VERSION >= 2
     ? pass('PHP ' . PHP_VERSION . ' (>= 8.2 requerido)')
     : fail('PHP ' . PHP_VERSION . ' — requer 8.2 ou superior');
 
-foreach (['pdo_mysql','mbstring','gd','zip','opcache','redis','json','openssl'] as $ext) {
+foreach (['pdo_mysql','mbstring','gd','zip','redis','json','openssl'] as $ext) {
     extension_loaded($ext) ? pass("ext/{$ext}") : fail("ext/{$ext} não instalada");
 }
+// OPcache é extensão Zend — não aparece em extension_loaded()
+function_exists('opcache_get_status') || in_array('Zend OPcache', get_loaded_extensions(true), true)
+    ? pass('ext/opcache (Zend OPcache)')
+    : warn('ext/opcache não detectada (performance reduzida)');
 
 // ── .env ──────────────────────────────────────────────────────────────────
 section('.env');

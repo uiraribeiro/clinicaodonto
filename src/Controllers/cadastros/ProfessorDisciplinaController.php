@@ -133,9 +133,9 @@ class ProfessorDisciplinaController
     /**
      * Remove um vínculo professor–disciplina (DELETE real, não soft delete).
      */
-    public function destroy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $id = (int) $id;
 
         $stmt = $this->pdo->prepare('SELECT id FROM professor_disciplina WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $id]);

@@ -77,7 +77,7 @@
                 <i class="bi bi-plus-circle text-warning me-2"></i>Adicionar Dia Bloqueado
             </div>
             <div class="card-body">
-                <form action="/cadastros/semestres/{{ semestre.id }}/dias-bloqueados" method="POST" novalidate>
+                <form action="/cadastros/semestres/{{ semestre.id }}/bloqueios" method="POST" novalidate>
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
 
                     <div class="mb-2">
@@ -185,7 +185,7 @@
                                 </td>
                                 <td>{{ d.motivo|e }}</td>
                                 <td class="text-center">
-                                    <form action="/cadastros/semestres/{{ semestre.id }}/dias-bloqueados/{{ d.id }}/excluir"
+                                    <form action="/cadastros/semestres/{{ semestre.id }}/bloqueios/{{ d.id }}/remover"
                                           method="POST"
                                           onsubmit="return confirm('Excluir o bloqueio do dia {{ d.data|date('d/m/Y') }}?')">
                                         <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">

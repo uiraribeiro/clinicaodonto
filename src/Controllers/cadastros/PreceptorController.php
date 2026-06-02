@@ -78,14 +78,14 @@ class PreceptorController
         return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $preceptor = $this->repo->findComDisponibilidade((int) $args['id']);
+        $preceptor = $this->repo->findComDisponibilidade((int) $id);
         if (empty($preceptor)) {
             return $response->withStatus(404);
         }
 
-        $preceptorComDisc = $this->repo->findComDisciplinas((int) $args['id']);
+        $preceptorComDisc = $this->repo->findComDisciplinas((int) $id);
 
         return $this->twig->render($response, 'cadastros/preceptores/show.html.twig', [
             'active_menu'     => 'preceptores',
@@ -97,9 +97,9 @@ class PreceptorController
         ]);
     }
 
-    public function edit(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function edit(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $preceptor = $this->repo->findComDisponibilidade((int) $args['id']);
+        $preceptor = $this->repo->findComDisponibilidade((int) $id);
         if (empty($preceptor)) {
             return $response->withStatus(404);
         }
@@ -115,9 +115,9 @@ class PreceptorController
         ]);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id        = (int) $args['id'];
+        $id        = (int) $id;
         $data      = (array) $request->getParsedBody();
         $preceptor = $this->repo->findById($id);
 
@@ -150,9 +150,9 @@ class PreceptorController
         return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
     }
 
-    public function destroy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $id = (int) $id;
         $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
         $_SESSION['flash_success'] = 'Preceptor desativado com sucesso.';
         return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);

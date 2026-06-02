@@ -126,9 +126,9 @@ class TurmaController
     public function show(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id = (int) $args['id'];
+        $id = (int) $id;
 
         $semestre    = $this->semestreRepo->findAtivo();
         $semestreRef = $semestre['referencia'] ?? '';
@@ -152,9 +152,9 @@ class TurmaController
     public function edit(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id = (int) $args['id'];
+        $id = (int) $id;
 
         $turma = $this->repo->findById($id);
         if (!$turma) {
@@ -189,9 +189,9 @@ class TurmaController
     public function update(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id   = (int) $args['id'];
+        $id   = (int) $id;
         $data = (array) $request->getParsedBody();
 
         $turma = $this->repo->findById($id);
@@ -245,9 +245,9 @@ class TurmaController
     public function destroy(
         ServerRequestInterface $request,
         ResponseInterface $response,
-        array $args
+        string $id
     ): ResponseInterface {
-        $id = (int) $args['id'];
+        $id = (int) $id;
         $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
         $_SESSION['flash_success'] = 'Turma desativada com sucesso.';
         return $response->withHeader('Location', '/cadastros/turmas')->withStatus(302);

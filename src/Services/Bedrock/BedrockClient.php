@@ -20,8 +20,11 @@ use Predis\Client as Redis;
  */
 final class BedrockClient
 {
-    private const CUSTO_INPUT_POR_TOKEN  = 0.000003;  // $3.00 / 1M tokens
-    private const CUSTO_OUTPUT_POR_TOKEN = 0.000015;  // $15.00 / 1M tokens
+    // Custos por token (Nova Lite: $0.06/$0.24 por 1M; Claude 3.5: $3/$15 por 1M)
+    private const CUSTOS = [
+        'amazon.nova' => ['in' => 0.00000006, 'out' => 0.00000024],
+        'anthropic'   => ['in' => 0.000003,   'out' => 0.000015],
+    ];
 
     private readonly BedrockRuntimeClient $aws;
     private readonly string $modelId;
@@ -76,14 +79,26 @@ final class BedrockClient
             return $this->respostaDesabilitada();
         }
 
-        // Monta mensagens para a API
+        $isNova = str_starts_with($this->modelId, 'amazon.nova');
+
+        // Monta mensagens no formato correto para cada modelo
         $messages = [];
         foreach ($history as $h) {
-            $messages[] = ['role' => $h['role'], 'content' => $h['content']];
+            $messages[] = [
+                'role'    => $h['role'],
+                'content' => $isNova ? [['text' => $h['content']]] : $h['content'],
+            ];
         }
-        $messages[] = ['role' => 'user', 'content' => $userMessage];
+        $messages[] = [
+            'role'    => 'user',
+            'content' => $isNova ? [['text' => $userMessage]] : $userMessage,
+        ];
 
-        $body = [
+        $body = $isNova ? [
+            'messages'        => $messages,
+            'system'          => [['text' => $systemPrompt]],
+            'inferenceConfig' => ['maxTokens' => $this->maxTokens, 'temperature' => $this->temperature],
+        ] : [
             'anthropic_version' => 'bedrock-2023-05-31',
             'max_tokens'        => $this->maxTokens,
             'temperature'       => $this->temperature,
@@ -111,11 +126,18 @@ final class BedrockClient
                 'contentType' => 'application/json',
             ]);
 
-            $duracaoMs  = (int)((hrtime(true) - $inicio) / 1_000_000);
-            $resposta   = json_decode($result->get('body')->getContents(), true);
-            $texto      = $resposta['content'][0]['text'] ?? '';
-            $tokensIn   = $resposta['usage']['input_tokens']  ?? 0;
-            $tokensOut  = $resposta['usage']['output_tokens'] ?? 0;
+            $duracaoMs = (int)((hrtime(true) - $inicio) / 1_000_000);
+            $resposta  = json_decode($result->get('body')->getContents(), true);
+
+            if ($isNova) {
+                $texto     = $resposta['output']['message']['content'][0]['text'] ?? '';
+                $tokensIn  = $resposta['usage']['inputTokens']  ?? 0;
+                $tokensOut = $resposta['usage']['outputTokens'] ?? 0;
+            } else {
+                $texto     = $resposta['content'][0]['text'] ?? '';
+                $tokensIn  = $resposta['usage']['input_tokens']  ?? 0;
+                $tokensOut = $resposta['usage']['output_tokens'] ?? 0;
+            }
 
             if ($tipoChamada !== 'chat' && count($history) === 0) {
                 $this->gravarCache($promptHash, $texto);
@@ -175,7 +197,8 @@ final class BedrockClient
         string $promptHash,
         bool   $cacheHit,
     ): void {
-        $custo = ($tokensIn * self::CUSTO_INPUT_POR_TOKEN) + ($tokensOut * self::CUSTO_OUTPUT_POR_TOKEN);
+        $tabela = str_starts_with($this->modelId, 'amazon.nova') ? self::CUSTOS['amazon.nova'] : self::CUSTOS['anthropic'];
+        $custo  = ($tokensIn * $tabela['in']) + ($tokensOut * $tabela['out']);
         try {
             $stmt = $this->pdo->prepare(
                 'INSERT INTO bedrock_logs

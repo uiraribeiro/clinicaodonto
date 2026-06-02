@@ -78,14 +78,14 @@ class ProfessorController
         return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
     }
 
-    public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function show(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $professor = $this->repo->findComDisponibilidade((int) $args['id']);
+        $professor = $this->repo->findComDisponibilidade((int) $id);
         if (empty($professor)) {
             return $response->withStatus(404);
         }
 
-        $professorComDisc = $this->repo->findComDisciplinas((int) $args['id']);
+        $professorComDisc = $this->repo->findComDisciplinas((int) $id);
 
         return $this->twig->render($response, 'cadastros/professores/show.html.twig', [
             'active_menu'     => 'professores',
@@ -97,9 +97,9 @@ class ProfessorController
         ]);
     }
 
-    public function edit(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function edit(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $professor = $this->repo->findComDisponibilidade((int) $args['id']);
+        $professor = $this->repo->findComDisponibilidade((int) $id);
         if (empty($professor)) {
             return $response->withStatus(404);
         }
@@ -115,9 +115,9 @@ class ProfessorController
         ]);
     }
 
-    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function update(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id        = (int) $args['id'];
+        $id        = (int) $id;
         $data      = (array) $request->getParsedBody();
         $professor = $this->repo->findById($id);
 
@@ -150,9 +150,9 @@ class ProfessorController
         return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
     }
 
-    public function destroy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $id = (int) $id;
         $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
         $_SESSION['flash_success'] = 'Professor desativado com sucesso.';
         return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
