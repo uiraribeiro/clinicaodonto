@@ -1,0 +1,161 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ turma.nome|e }} — Turmas — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/turmas">Turmas</a></li>
+<li class="breadcrumb-item active">{{ turma.nome|e }}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        <i class="bi bi-people me-2 text-primary"></i>{{ turma.nome|e }}
+    </h4>
+    <div class="btn-group btn-group-sm">
+        <a href="/cadastros/turmas/{{ turma.id }}/editar" class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a href="/cadastros/turmas" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Card Dados da Turma -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-info-circle text-primary me-2"></i>Dados da Turma
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted small">Nome</dt>
+                    <dd class="col-sm-7 fw-semibold">{{ turma.nome|e }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Curso</dt>
+                    <dd class="col-sm-7">{{ turma.curso_nome|e }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Período</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-secondary">{{ turma.periodo }}º Período</span>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Nº de Alunos</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ turma.numero_alunos > 25 ? 'bg-warning text-dark' : 'bg-light text-dark border' }}">
+                            {{ turma.numero_alunos }}
+                        </span>
+                        {% if turma.numero_alunos > 25 %}
+                        <small class="text-warning ms-1">
+                            <i class="bi bi-exclamation-triangle-fill"></i> próximo ao limite
+                        </small>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ turma.ativo ? 'bg-success' : 'bg-secondary' }}">
+                            {{ turma.ativo ? 'Ativa' : 'Inativa' }}
+                        </span>
+                    </dd>
+
+                    {% if turma.tem_restricoes %}
+                    <dt class="col-sm-5 text-muted small">Restrições</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-lock me-1"></i>Tem restrições
+                        </span>
+                        {% if turma.restricao_observacoes %}
+                        <div class="small text-muted mt-1">{{ turma.restricao_observacoes|e }}</div>
+                        {% endif %}
+                    </dd>
+                    {% endif %}
+                </dl>
+
+                {% if turma.tem_restricoes and turma.dias_bloqueados is defined and turma.dias_bloqueados %}
+                <hr>
+                <div class="small">
+                    <span class="fw-semibold text-muted">Dias bloqueados:</span>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        {% set diasNomes = {'seg': 'Segunda', 'ter': 'Terça', 'qua': 'Quarta', 'qui': 'Quinta', 'sex': 'Sexta', 'sab': 'Sábado'} %}
+                        {% for dia in turma.dias_bloqueados %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                            {{ diasNomes[dia] ?? dia }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Disciplinas do Semestre Atual -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold border-bottom d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-book text-primary me-2"></i>Disciplinas do Semestre Atual</span>
+                {% if semestre_ref is defined %}
+                <span class="badge bg-success">{{ semestre_ref }}</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if disciplinas is defined and disciplinas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Código</th>
+                                <th>Disciplina</th>
+                                <th>Tipo</th>
+                                <th>Professor / Preceptor</th>
+                                <th class="text-center">Espaço</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in disciplinas %}
+                            <tr>
+                                <td><code>{{ d.codigo|e }}</code></td>
+                                <td class="fw-semibold">{{ d.nome|e }}</td>
+                                <td>
+                                    {% if d.tipo == 'pratica_comum' %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Prática</span>
+                                    {% elseif d.tipo == 'estagio' %}
+                                    <span class="badge bg-purple-subtle text-purple border">Estágio</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ d.tipo|e }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ d.professor_nome|default(d.preceptor_nome)|default('—')|e }}</td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        {% if d.usa_clinica %}
+                                        <span class="badge bg-primary">Clínica</span>
+                                        {% endif %}
+                                        {% if d.usa_laboratorio %}
+                                        <span class="badge bg-info text-dark">Lab</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-book fs-3 d-block mb-2 opacity-50"></i>
+                    Nenhuma disciplina vinculada a esta turma no semestre atual.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+# =============================================================================
+# Docker Compose — Produção
+# Uso: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Diferenças em relação ao docker-compose.yml de desenvolvimento:
+#  - Porta 3306 do MySQL NÃO exposta (banco só acessível internamente)
+#  - Nginx ouve 80 + 443 (HTTPS via certificado)
+#  - Redis com senha obrigatória
+#  - PHP usa Dockerfile.prod (sem dev tools, opcache agressivo)
+#  - Variáveis de ambiente lidas do .env (nunca hardcoded aqui)
+# =============================================================================
+
+services:
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile.prod
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+    # Em produção não monta o código-fonte: a imagem já contém o código (COPY)
+    volumes:
+      - ./storage:/var/www/html/storage   # persiste logs, cache, exports
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
+
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/nginx/certs:/etc/nginx/certs:ro   # certificados SSL
+
+  mysql:
+    ports: []   # remove exposição da porta 3306 ao host
+
+  redis:
+    # Redis com senha em produção
+    command: >
+      redis-server
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru

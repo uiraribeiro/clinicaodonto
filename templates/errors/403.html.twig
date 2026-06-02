@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>403 — Acesso negado · {{ app_name }}</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .box { text-align: center; max-width: 440px; padding: 2rem; }
+        .code { font-size: 5rem; font-weight: 900; color: #d1d5db; line-height: 1; }
+        .icon { font-size: 4rem; color: #fbbf24; margin-bottom: .5rem; }
+        h1 { font-size: 1.5rem; font-weight: 700; color: #111827; margin: 0 0 .5rem; }
+        p { color: #6b7280; margin: 0 0 1.5rem; }
+        a { display: inline-block; padding: .55rem 1.5rem; background: #1a56db; color: #fff; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 0 .25rem; }
+        a.secondary { background: #6b7280; }
+        a:hover { opacity: .9; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="icon">🔒</div>
+        <div class="code">403</div>
+        <h1>Acesso não autorizado</h1>
+        <p>Seu perfil não tem permissão para acessar esta área. Se acredita que isso é um erro, entre em contato com o administrador.</p>
+        <a href="/">Início</a>
+        <a href="/login" class="secondary">Entrar com outra conta</a>
+    </div>
+</body>
+</html>

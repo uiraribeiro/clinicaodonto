@@ -1,0 +1,162 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Versão v{{ versao.numero_versao }} — Agenda{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">
+            Agenda v{{ versao.numero_versao }}
+            {% if versao.status == 'publicada' %}
+                <span class="badge bg-success fs-6 align-middle">Publicada</span>
+            {% elseif versao.status == 'rascunho' %}
+                <span class="badge bg-secondary fs-6 align-middle">Rascunho</span>
+            {% elseif versao.status == 'simulacao' %}
+                <span class="badge bg-info text-dark fs-6 align-middle">Simulação</span>
+            {% else %}
+                <span class="badge bg-dark fs-6 align-middle">Arquivada</span>
+            {% endif %}
+        </h1>
+        <small class="text-muted">{{ versao.semestre_ref }} — {{ versao.descricao }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/agenda" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+        {% if versao.status == 'rascunho' %}
+            <form action="/agenda/publicar/{{ versao.id }}" method="post" class="d-inline">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn btn-success"
+                        data-confirm="Publicar esta versão como agenda oficial? A versão atual publicada será arquivada.">
+                    <i class="bi bi-check-circle me-1"></i> Publicar
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+{# ── KPIs ── #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold text-primary">{{ versao.score_ocupacao ?? '—' }}%</div>
+            <div class="text-muted small">Taxa de alocação</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold">{{ versao.agendamentos|length }}</div>
+            <div class="text-muted small">Alocações realizadas</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold {% if versao.total_conflitos > 0 %}text-danger{% else %}text-success{% endif %}">
+                {{ versao.total_conflitos }}
+            </div>
+            <div class="text-muted small">Conflitos</div>
+        </div>
+    </div>
+    <div class="col-sm-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold text-info">{{ agendados|length }}</div>
+            <div class="text-muted small">Semanas com aula</div>
+        </div>
+    </div>
+</div>
+
+{# ── Conflitos ── #}
+{% if conflitos is not empty %}
+<div class="card border-danger border-0 shadow-sm mb-4">
+    <div class="card-header bg-danger bg-opacity-10 text-danger-emphasis d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Conflitos detectados ({{ conflitos|length }})</h6>
+        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#listaConflitos">
+            Ver detalhes
+        </button>
+    </div>
+    <div class="collapse" id="listaConflitos">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Severidade</th>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for c in conflitos %}
+                    <tr>
+                        <td>
+                            <span class="badge {% if c.severidade == 'critico' %}bg-danger{% elseif c.severidade == 'alto' %}bg-warning text-dark{% elseif c.severidade == 'medio' %}bg-info text-dark{% else %}bg-secondary{% endif %}">
+                                {{ c.severidade }}
+                            </span>
+                        </td>
+                        <td><code>{{ c.tipo }}</code></td>
+                        <td class="small">{{ c.descricao }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{# ── Agenda por semana ── #}
+{% if agendados is empty %}
+    <div class="alert alert-warning">Nenhum agendamento foi gerado para esta versão.</div>
+{% else %}
+    <div x-data="{ semanaAberta: {{ agendados|keys|first }} }">
+        {# Navegação de semanas #}
+        <div class="d-flex flex-wrap gap-1 mb-3">
+            {% for numSemana, dias in agendados %}
+                <button class="btn btn-sm"
+                        :class="semanaAberta === {{ numSemana }} ? 'btn-primary' : 'btn-outline-secondary'"
+                        @click="semanaAberta = {{ numSemana }}">
+                    S{{ numSemana }}
+                </button>
+            {% endfor %}
+        </div>
+
+        {# Conteúdo de cada semana #}
+        {% for numSemana, dias in agendados %}
+            <div x-show="semanaAberta === {{ numSemana }}" x-cloak>
+                <h6 class="fw-semibold mb-3">Semana {{ numSemana }}</h6>
+                {% for data, slots in dias %}
+                    <div class="mb-3">
+                        <div class="fw-semibold text-muted small mb-2">
+                            {{ data|date('l, d/m/Y') }}
+                        </div>
+                        <div class="row g-2">
+                            {% for ag in slots %}
+                                <div class="col-md-6 col-xl-4">
+                                    <div class="card border-0 shadow-sm h-100 slot-{{ ag.espaco_tipo }}">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <span class="badge {% if ag.espaco_tipo == 'clinica' %}bg-primary{% else %}bg-success{% endif %} small">
+                                                    {{ ag.espaco_tipo|capitalize }} #{{ ag.espaco_id }}
+                                                </span>
+                                                <span class="text-muted small">{{ ag.hora_inicio|slice(0,5) }}–{{ ag.hora_fim|slice(0,5) }}</span>
+                                            </div>
+                                            <div class="fw-semibold">{{ ag.turma_nome }}</div>
+                                            <div class="text-muted small">{{ ag.disciplina_nome }}</div>
+                                            {% if ag.professor_nome %}
+                                                <div class="small mt-1"><i class="bi bi-person text-muted"></i> {{ ag.professor_nome }}</div>
+                                            {% endif %}
+                                            {% if ag.preceptor_nome %}
+                                                <div class="small"><i class="bi bi-person-check text-muted"></i> {{ ag.preceptor_nome }}</div>
+                                            {% endif %}
+                                            <div class="small text-muted mt-1">{{ ag.num_alunos }} alunos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

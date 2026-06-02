@@ -1,0 +1,236 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Horários e Bloqueios — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Horários</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="{
+    espacoTipo: 'clinica',
+    espacoId: '',
+    diaInteiro: true,
+    clinicas: {{ clinicas|json_encode|raw }},
+    laboratorios: {{ laboratorios|json_encode|raw }},
+    get espacosDisponiveis() {
+        return this.espacoTipo === 'clinica' ? this.clinicas : this.laboratorios;
+    }
+}">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        <i class="bi bi-clock me-2 text-primary"></i>Horários e Bloqueios
+    </h4>
+</div>
+
+<div class="row g-4 mb-4">
+
+    <!-- Coluna Clínica -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-hospital text-primary me-2"></i>Clínica
+            </div>
+            <div class="card-body">
+                {% for c in clinicas %}
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="fw-semibold mb-1">{{ c.nome|e }}</div>
+                    <div class="small text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        <strong>Seg–Sex:</strong> {{ c.hora_abertura }} – {{ c.hora_fechamento }}
+                        &nbsp;|&nbsp;
+                        <strong>Sáb:</strong> {{ c.hora_abertura_sabado }} – {{ c.hora_fechamento_sabado }}
+                    </div>
+                    <div class="small mt-1">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                            {{ c.quantidade_cadeiras }} cadeiras × {{ c.capacidade_por_cadeira }} = {{ c.quantidade_cadeiras * c.capacidade_por_cadeira }} alunos
+                        </span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">Nenhuma clínica cadastrada.</p>
+                {% endfor %}
+
+                <hr>
+                <div class="fw-semibold small text-muted text-uppercase mb-2">Bloqueios futuros</div>
+                {% set bloqueios_clinica = bloqueios|filter(b => b.espaco_tipo == 'clinica') %}
+                {% if bloqueios_clinica|length > 0 %}
+                <ul class="list-group list-group-flush">
+                    {% for b in bloqueios_clinica %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold small">{{ b.data_inicio|date('d/m/Y') }}</span>
+                            {% if b.data_fim != b.data_inicio %}
+                            <span class="text-muted small"> → {{ b.data_fim|date('d/m/Y') }}</span>
+                            {% endif %}
+                            <span class="ms-2 badge bg-{{ b.tipo == 'feriado' ? 'danger' : (b.tipo == 'recesso' ? 'warning' : 'secondary') }}">
+                                {{ b.tipo|capitalize }}
+                            </span>
+                            <div class="text-muted" style="font-size:0.8rem">{{ b.motivo|e }}</div>
+                        </div>
+                        <form action="/cadastros/bloqueios/{{ b.id }}/excluir" method="POST"
+                              onsubmit="return confirm('Excluir este bloqueio?')">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small">Nenhum bloqueio futuro para a clínica.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Coluna Laboratório -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-mortarboard text-primary me-2"></i>Laboratório
+            </div>
+            <div class="card-body">
+                {% for l in laboratorios %}
+                <div class="mb-3 p-3 bg-light rounded">
+                    <div class="fw-semibold mb-1">{{ l.nome|e }}</div>
+                    <div class="small text-muted">
+                        <i class="bi bi-clock me-1"></i>
+                        <strong>Seg–Sex:</strong> {{ l.hora_abertura }} – {{ l.hora_fechamento }}
+                        &nbsp;|&nbsp;
+                        <strong>Sáb:</strong> {{ l.hora_abertura_sabado }} – {{ l.hora_fechamento_sabado }}
+                    </div>
+                    <div class="small mt-1">
+                        <span class="badge bg-info-subtle text-info border border-info-subtle">
+                            {{ l.quantidade_assentos }} assentos
+                        </span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted small">Nenhum laboratório cadastrado.</p>
+                {% endfor %}
+
+                <hr>
+                <div class="fw-semibold small text-muted text-uppercase mb-2">Bloqueios futuros</div>
+                {% set bloqueios_lab = bloqueios|filter(b => b.espaco_tipo == 'laboratorio') %}
+                {% if bloqueios_lab|length > 0 %}
+                <ul class="list-group list-group-flush">
+                    {% for b in bloqueios_lab %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-semibold small">{{ b.data_inicio|date('d/m/Y') }}</span>
+                            {% if b.data_fim != b.data_inicio %}
+                            <span class="text-muted small"> → {{ b.data_fim|date('d/m/Y') }}</span>
+                            {% endif %}
+                            <span class="ms-2 badge bg-{{ b.tipo == 'feriado' ? 'danger' : (b.tipo == 'recesso' ? 'warning' : 'secondary') }}">
+                                {{ b.tipo|capitalize }}
+                            </span>
+                            <div class="text-muted" style="font-size:0.8rem">{{ b.motivo|e }}</div>
+                        </div>
+                        <form action="/cadastros/bloqueios/{{ b.id }}/excluir" method="POST"
+                              onsubmit="return confirm('Excluir este bloqueio?')">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small">Nenhum bloqueio futuro para o laboratório.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Formulário inline de adição de bloqueio -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold border-bottom">
+        <i class="bi bi-plus-circle text-warning me-2"></i>Adicionar Bloqueio de Espaço
+    </div>
+    <div class="card-body">
+        <form action="/cadastros/bloqueios" method="POST" novalidate>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Espaço <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" name="espaco_tipo" x-model="espacoTipo"
+                            @change="espacoId = ''" required>
+                        <option value="clinica">Clínica</option>
+                        <option value="laboratorio">Laboratório</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Qual <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" name="espaco_id" x-model="espacoId" required>
+                        <option value="">Selecione...</option>
+                        <template x-for="e in espacosDisponiveis" :key="e.id">
+                            <option :value="e.id" x-text="e.nome"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" name="tipo" required>
+                        <option value="feriado">Feriado</option>
+                        <option value="recesso">Recesso</option>
+                        <option value="evento">Evento</option>
+                        <option value="manutencao">Manutenção</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Data Início <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-control-sm" name="data_inicio" required>
+                </div>
+
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Data Fim <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-control-sm" name="data_fim" required>
+                </div>
+
+                <div class="col-12">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="dia_inteiro_inline"
+                                       x-model="diaInteiro" checked>
+                                <label class="form-check-label small" for="dia_inteiro_inline">Dia inteiro</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2" x-show="!diaInteiro" x-transition>
+                            <label class="form-label fw-semibold small">Hora Início</label>
+                            <input type="time" class="form-control form-control-sm" name="hora_inicio">
+                        </div>
+                        <div class="col-md-2" x-show="!diaInteiro" x-transition>
+                            <label class="form-label fw-semibold small">Hora Fim</label>
+                            <input type="time" class="form-control form-control-sm" name="hora_fim">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-sm" name="motivo"
+                                   maxlength="300" placeholder="Descreva o motivo do bloqueio..." required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-warning btn-sm w-100">
+                                <i class="bi bi-plus-lg me-1"></i>Adicionar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+</div>
+{% endblock %}

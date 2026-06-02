@@ -1,0 +1,149 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Laboratório — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Laboratório</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        <i class="bi bi-mortarboard me-2 text-primary"></i>Laboratório
+    </h4>
+    <div class="btn-group btn-group-sm">
+        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/editar" class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i>Editar Laboratório
+        </a>
+        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios" class="btn btn-outline-warning">
+            <i class="bi bi-slash-circle me-1"></i>Gerenciar Bloqueios
+        </a>
+    </div>
+</div>
+
+<!-- Cards de Indicadores -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fs-2 fw-bold text-primary">{{ laboratorio.quantidade_assentos }}</div>
+                <div class="text-muted small">Assentos</div>
+                <i class="bi bi-mortarboard fs-4 text-primary opacity-50 mt-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fs-2 fw-bold {{ laboratorio.quantidade_assentos >= 28 ? 'text-success' : 'text-secondary' }}">
+                    {{ laboratorio.quantidade_assentos }}
+                </div>
+                <div class="text-muted small">Capacidade Total</div>
+                <span class="badge {{ laboratorio.quantidade_assentos >= 28 ? 'bg-success' : 'bg-secondary' }} mt-1">
+                    {{ laboratorio.quantidade_assentos >= 28 ? 'Capacidade plena' : 'Capacidade reduzida' }}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fw-bold text-dark">Seg–Sex</div>
+                <div class="small text-muted">{{ laboratorio.hora_abertura }} – {{ laboratorio.hora_fechamento }}</div>
+                <hr class="my-2">
+                <div class="fw-bold text-dark">Sábado</div>
+                <div class="small text-muted">{{ laboratorio.hora_abertura_sabado }} – {{ laboratorio.hora_fechamento_sabado }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4 d-flex flex-column justify-content-center">
+                <div class="fw-bold text-dark mb-1">Status</div>
+                <span class="badge bg-success fs-6">Ativo</span>
+                {% if bloqueios is defined and bloqueios|length > 0 %}
+                <div class="small text-warning mt-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {{ bloqueios|length }} bloqueio(s) futuro(s)
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if laboratorio.observacoes %}
+<div class="alert alert-light border mb-4">
+    <i class="bi bi-info-circle me-2 text-primary"></i>
+    <strong>Observações:</strong> {{ laboratorio.observacoes|e }}
+</div>
+{% endif %}
+
+<!-- Bloqueios Futuros -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold border-bottom d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-slash-circle text-warning me-2"></i>Bloqueios Futuros</span>
+        <a href="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar Bloqueio
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if bloqueios is defined and bloqueios %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data Início</th>
+                        <th>Data Fim</th>
+                        <th>Horário</th>
+                        <th>Motivo</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bloqueios %}
+                    <tr>
+                        <td>{{ b.data_inicio|date('d/m/Y') }}</td>
+                        <td>{{ b.data_fim|date('d/m/Y') }}</td>
+                        <td>
+                            {% if b.hora_inicio %}
+                            {{ b.hora_inicio }} – {{ b.hora_fim }}
+                            {% else %}
+                            <span class="badge bg-secondary">Dia inteiro</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ b.motivo|e }}</td>
+                        <td>
+                            {% set tipoCores = {'feriado': 'danger', 'recesso': 'warning', 'evento': 'info', 'manutencao': 'secondary'} %}
+                            <span class="badge bg-{{ tipoCores[b.tipo] ?? 'secondary' }}">
+                                {{ b.tipo|capitalize|e }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <form action="/cadastros/laboratorios/{{ laboratorio.id }}/bloqueios/{{ b.id }}/excluir"
+                                  method="POST"
+                                  onsubmit="return confirm('Excluir este bloqueio?')">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-check-circle fs-3 d-block mb-2 text-success opacity-75"></i>
+            Nenhum bloqueio futuro cadastrado.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

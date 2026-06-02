@@ -1,0 +1,137 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Relatório por Espaço — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/relatorios">Relatórios</a></li>
+<li class="breadcrumb-item active">Por Espaço</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-hospital me-2 text-danger"></i>Ocupação de Espaços</h4>
+        <small class="text-muted">Versão #{{ versao.numero_versao }} · {{ versao.semestre_ref }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/relatorios/exportar/espaco/pdf" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-filetype-pdf me-1"></i>PDF
+        </a>
+        <a href="/relatorios/exportar/espaco/xlsx" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        <a href="/relatorios/exportar/espaco/csv" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-filetype-csv me-1"></i>CSV
+        </a>
+        <a href="/relatorios" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+{# Clínicas #}
+<h5 class="fw-semibold text-primary mb-2"><i class="bi bi-hospital me-1"></i>Clínicas</h5>
+{% if clinicas is empty %}
+    <div class="alert alert-secondary mb-4">Nenhuma clínica cadastrada.</div>
+{% else %}
+    {% for espaco_nome, semanas in clinicas %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent fw-semibold py-2">{{ espaco_nome }}</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center">Semana</th>
+                        <th class="text-center">Início</th>
+                        <th class="text-center">Capacidade</th>
+                        <th class="text-center">Dias Usados</th>
+                        <th class="text-end">Slots</th>
+                        <th class="text-end">Alunos</th>
+                        <th class="text-end">Horas</th>
+                        <th style="min-width:110px">Ocupação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in semanas %}
+                    {% set cap = s.capacidade > 0 ? s.capacidade : 1 %}
+                    {% set pct = s.dias_usados > 0 ? (s.total_alunos / (cap * s.dias_usados) * 100)|round : 0 %}
+                    {% set pct_c = pct > 100 ? 100 : pct %}
+                    {% set cor = pct >= 80 ? 'danger' : (pct >= 50 ? 'warning' : 'success') %}
+                    <tr>
+                        <td class="text-center fw-bold">{{ s.numero_semana }}</td>
+                        <td class="text-center small">{{ s.data_inicio }}</td>
+                        <td class="text-center">{{ s.capacidade }}</td>
+                        <td class="text-center">{{ s.dias_usados }}</td>
+                        <td class="text-end">{{ s.total_slots }}</td>
+                        <td class="text-end">{{ s.total_alunos }}</td>
+                        <td class="text-end">{{ s.total_horas|number_format(1) }}h</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <div class="progress flex-grow-1" style="height:6px">
+                                    <div class="progress-bar bg-{{ cor }}" style="width:{{ pct_c }}%"></div>
+                                </div>
+                                <small class="text-{{ cor }} fw-bold" style="min-width:38px;text-align:right">{{ pct }}%</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+{# Laboratórios #}
+<h5 class="fw-semibold text-success mb-2 mt-4"><i class="bi bi-flask me-1"></i>Laboratórios</h5>
+{% if laboratorios is empty %}
+    <div class="alert alert-secondary">Nenhum laboratório cadastrado.</div>
+{% else %}
+    {% for espaco_nome, semanas in laboratorios %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent fw-semibold py-2">{{ espaco_nome }}</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-center">Semana</th>
+                        <th class="text-center">Início</th>
+                        <th class="text-center">Capacidade</th>
+                        <th class="text-center">Dias Usados</th>
+                        <th class="text-end">Slots</th>
+                        <th class="text-end">Alunos</th>
+                        <th class="text-end">Horas</th>
+                        <th style="min-width:110px">Ocupação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for s in semanas %}
+                    {% set cap = s.capacidade > 0 ? s.capacidade : 1 %}
+                    {% set pct = s.dias_usados > 0 ? (s.total_alunos / (cap * s.dias_usados) * 100)|round : 0 %}
+                    {% set pct_c = pct > 100 ? 100 : pct %}
+                    {% set cor = pct >= 80 ? 'danger' : (pct >= 50 ? 'warning' : 'success') %}
+                    <tr>
+                        <td class="text-center fw-bold">{{ s.numero_semana }}</td>
+                        <td class="text-center small">{{ s.data_inicio }}</td>
+                        <td class="text-center">{{ s.capacidade }}</td>
+                        <td class="text-center">{{ s.dias_usados }}</td>
+                        <td class="text-end">{{ s.total_slots }}</td>
+                        <td class="text-end">{{ s.total_alunos }}</td>
+                        <td class="text-end">{{ s.total_horas|number_format(1) }}h</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <div class="progress flex-grow-1" style="height:6px">
+                                    <div class="progress-bar bg-{{ cor }}" style="width:{{ pct_c }}%"></div>
+                                </div>
+                                <small class="text-{{ cor }} fw-bold" style="min-width:38px;text-align:right">{{ pct }}%</small>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}

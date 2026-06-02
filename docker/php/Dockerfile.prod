@@ -1,0 +1,68 @@
+FROM php:8.2-fpm
+
+# Instala dependências de sistema (igual ao Dockerfile de dev)
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    zip \
+    unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo_mysql \
+        mbstring \
+        exif \
+        pcntl \
+        bcmath \
+        gd \
+        zip \
+        opcache \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instala Composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copia código-fonte (sem vendor/, storage/, .env)
+COPY --chown=www-data:www-data . .
+
+# Instala dependências sem dev
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Remove ferramentas de dev que não devem estar em produção
+RUN rm -rf \
+    tests/ \
+    .git/ \
+    .gitignore \
+    docker-compose.yml \
+    docker-compose.prod.yml \
+    CLAUDE.md \
+    FILETREE.md \
+    *.md
+
+# Garante diretórios de runtime com permissões corretas
+RUN mkdir -p storage/logs storage/cache storage/exports \
+    && chown -R www-data:www-data storage \
+    && chmod -R 755 storage
+
+# Opcache agressivo para produção
+RUN echo "opcache.enable=1\n\
+opcache.memory_consumption=256\n\
+opcache.max_accelerated_files=20000\n\
+opcache.revalidate_freq=0\n\
+opcache.validate_timestamps=0\n\
+opcache.save_comments=0" > /usr/local/etc/php/conf.d/opcache-prod.ini
+
+USER www-data
+
+EXPOSE 9000
+CMD ["php-fpm"]

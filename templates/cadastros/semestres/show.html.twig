@@ -1,0 +1,214 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ semestre.referencia|e }} — Semestres — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/semestres">Semestres</a></li>
+<li class="breadcrumb-item active">{{ semestre.referencia|e }}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        <i class="bi bi-calendar-range me-2 text-primary"></i>Semestre {{ semestre.referencia|e }}
+    </h4>
+    <div class="btn-group btn-group-sm">
+        {% if semestre.status == 'planejamento' %}
+        <form action="/cadastros/semestres/{{ semestre.id }}/ativar" method="POST"
+              onsubmit="return confirm('Ativar o semestre {{ semestre.referencia|e }}? O semestre atual será encerrado.')">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-play-circle me-1"></i>Ativar Semestre
+            </button>
+        </form>
+        {% endif %}
+        <a href="/cadastros/semestres/{{ semestre.id }}/editar" class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a href="/cadastros/semestres" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Resumo -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-info-circle text-primary me-2"></i>Resumo
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted small">Referência</dt>
+                    <dd class="col-sm-7 fw-bold fs-5">{{ semestre.referencia|e }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Início</dt>
+                    <dd class="col-sm-7">{{ semestre.data_inicio|date('d/m/Y') }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Fim</dt>
+                    <dd class="col-sm-7">{{ semestre.data_fim|date('d/m/Y') }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Semanas</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-light text-dark border">{{ semestre.numero_semanas }}</span>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Status</dt>
+                    <dd class="col-sm-7">
+                        {% if semestre.status == 'ativo' %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% elseif semestre.status == 'planejamento' %}
+                        <span class="badge bg-warning text-dark">Planejamento</span>
+                        {% elseif semestre.status == 'encerrado' %}
+                        <span class="badge bg-secondary">Encerrado</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Adicionar dia bloqueado -->
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-plus-circle text-warning me-2"></i>Adicionar Dia Bloqueado
+            </div>
+            <div class="card-body">
+                <form action="/cadastros/semestres/{{ semestre.id }}/dias-bloqueados" method="POST" novalidate>
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Data <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control form-control-sm" name="data"
+                               min="{{ semestre.data_inicio }}" max="{{ semestre.data_fim }}" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold small">Tipo <span class="text-danger">*</span></label>
+                        <select class="form-select form-select-sm" name="tipo" required>
+                            <option value="feriado">Feriado</option>
+                            <option value="recesso">Recesso</option>
+                            <option value="evento">Evento</option>
+                            <option value="manutencao">Manutenção</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Motivo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" name="motivo"
+                               maxlength="200" placeholder="Ex: Feriado Municipal..." required>
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                        <i class="bi bi-plus-lg me-1"></i>Adicionar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conteúdo principal -->
+    <div class="col-md-8">
+
+        <!-- Tabela de Semanas -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-list-ol text-primary me-2"></i>Semanas do Semestre
+            </div>
+            <div class="card-body p-0">
+                {% if semanas is defined and semanas %}
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-hover table-sm align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="text-center" style="width:60px">Sem.</th>
+                                <th>Data Início</th>
+                                <th>Data Fim</th>
+                                <th class="text-center">Feriado?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sem in semanas %}
+                            <tr class="{{ sem.tem_feriado is defined and sem.tem_feriado ? 'table-warning' : '' }}">
+                                <td class="text-center fw-bold">{{ loop.index }}</td>
+                                <td>{{ sem.data_inicio|date('d/m/Y') }}</td>
+                                <td>{{ sem.data_fim|date('d/m/Y') }}</td>
+                                <td class="text-center">
+                                    {% if sem.tem_feriado is defined and sem.tem_feriado %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Sim
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-x fs-3 d-block mb-2 opacity-50"></i>
+                    Semanas ainda não geradas.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Dias Bloqueados -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold border-bottom">
+                <i class="bi bi-slash-circle text-warning me-2"></i>Dias Bloqueados
+            </div>
+            <div class="card-body p-0">
+                {% if dias_bloqueados is defined and dias_bloqueados %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Tipo</th>
+                                <th>Motivo</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in dias_bloqueados %}
+                            <tr>
+                                <td class="fw-semibold">{{ d.data|date('d/m/Y') }}</td>
+                                <td>
+                                    {% set tipoCores = {'feriado': 'danger', 'recesso': 'warning', 'evento': 'info', 'manutencao': 'secondary'} %}
+                                    <span class="badge bg-{{ tipoCores[d.tipo] ?? 'secondary' }}">
+                                        {{ d.tipo|capitalize|e }}
+                                    </span>
+                                </td>
+                                <td>{{ d.motivo|e }}</td>
+                                <td class="text-center">
+                                    <form action="/cadastros/semestres/{{ semestre.id }}/dias-bloqueados/{{ d.id }}/excluir"
+                                          method="POST"
+                                          onsubmit="return confirm('Excluir o bloqueio do dia {{ d.data|date('d/m/Y') }}?')">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-check-circle fs-3 d-block mb-2 text-success opacity-75"></i>
+                    Nenhum dia bloqueado cadastrado.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

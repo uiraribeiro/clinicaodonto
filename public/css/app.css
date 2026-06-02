@@ -1,0 +1,250 @@
+/* =============================================================================
+   Odonto Scheduler — Estilos principais
+   ============================================================================= */
+
+:root {
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 64px;
+    --topbar-height: 56px;
+    --color-clinica: #0d6efd;
+    --color-laboratorio: #0dcaf0;
+    --color-estagio: #198754;
+    --color-pratica: #6610f2;
+    --color-conflito: #dc3545;
+    --color-gargalo: #fd7e14;
+}
+
+/* ── Layout principal ─────────────────────────────────────────────────────── */
+
+body {
+    font-size: 0.875rem;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    min-height: 100vh;
+    transition: width 0.25s ease;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sidebar.sidebar-collapsed {
+    width: var(--sidebar-collapsed-width);
+}
+
+.sidebar .nav-link {
+    font-size: 0.85rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.375rem;
+    transition: background 0.15s;
+    white-space: nowrap;
+}
+
+.sidebar .nav-link:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.sidebar .nav-link.active {
+    background: var(--bs-primary) !important;
+}
+
+.topbar {
+    height: var(--topbar-height);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+/* ── Cores por tipo de espaço (agenda) ───────────────────────────────────── */
+
+.slot-clinica {
+    background: var(--color-clinica);
+    color: #fff;
+    border-left: 4px solid #0a58ca;
+}
+
+.slot-laboratorio {
+    background: var(--color-laboratorio);
+    color: #000;
+    border-left: 4px solid #0aa2c0;
+}
+
+.slot-estagio {
+    border-left: 4px solid var(--color-estagio) !important;
+}
+
+.slot-pratica {
+    border-left: 4px solid var(--color-pratica) !important;
+}
+
+/* ── Grade de agenda semanal ─────────────────────────────────────────────── */
+
+.grade-agenda {
+    display: grid;
+    grid-template-columns: 60px repeat(6, 1fr);
+    gap: 2px;
+    font-size: 0.78rem;
+}
+
+.grade-agenda .hora-label {
+    text-align: right;
+    padding-right: 6px;
+    color: #6c757d;
+    font-size: 0.7rem;
+}
+
+.grade-agenda .dia-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 4px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.grade-slot {
+    border-radius: 4px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    overflow: hidden;
+}
+
+.grade-slot:hover {
+    opacity: 0.85;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* ── Cards de indicadores ────────────────────────────────────────────────── */
+
+.card {
+    border-radius: 0.75rem;
+}
+
+.indicator-card {
+    transition: transform 0.15s;
+}
+
+.indicator-card:hover {
+    transform: translateY(-2px);
+}
+
+/* ── Badges de espaço ────────────────────────────────────────────────────── */
+
+.badge-clinica    { background: var(--color-clinica); }
+.badge-laboratorio{ background: var(--color-laboratorio); color: #000; }
+.badge-conflito   { background: var(--color-conflito); }
+.badge-gargalo    { background: var(--color-gargalo); }
+
+/* ── Formulários ──────────────────────────────────────────────────────────── */
+
+.form-section {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* ── Painel de sugestões IA ─────────────────────────────────────────────── */
+
+.sugestao-card {
+    border-left: 4px solid #0d6efd;
+    transition: transform 0.15s;
+}
+
+.sugestao-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.sugestao-card.prioridade-critica  { border-left-color: #dc3545; }
+.sugestao-card.prioridade-alta     { border-left-color: #fd7e14; }
+.sugestao-card.prioridade-media    { border-left-color: #ffc107; }
+.sugestao-card.prioridade-baixa    { border-left-color: #20c997; }
+
+/* ── Chat IA ─────────────────────────────────────────────────────────────── */
+
+.chat-container {
+    height: 400px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+}
+
+.chat-msg-user {
+    align-self: flex-end;
+    background: var(--bs-primary);
+    color: #fff;
+    border-radius: 1rem 1rem 0 1rem;
+    padding: 0.5rem 1rem;
+    max-width: 75%;
+}
+
+.chat-msg-ia {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 1rem 1rem 1rem 0;
+    padding: 0.5rem 1rem;
+    max-width: 85%;
+}
+
+/* ── Ocupação visual (barra de cadeiras) ─────────────────────────────────── */
+
+.ocupacao-bar {
+    display: flex;
+    gap: 2px;
+    flex-wrap: wrap;
+}
+
+.cadeira-slot {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+}
+
+.cadeira-slot.ocupada { background: var(--color-clinica); border-color: #0a58ca; }
+.cadeira-slot.livre   { background: #e9ecef; }
+
+/* ── Responsividade ─────────────────────────────────────────────────────── */
+
+@media (max-width: 767.98px) {
+    .sidebar {
+        position: fixed;
+        z-index: 200;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .topbar { padding: 0.5rem; }
+
+    main { padding: 1rem !important; }
+
+    .grade-agenda {
+        grid-template-columns: 40px repeat(6, 1fr);
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .grade-agenda {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-container { height: 300px; }
+}
+
+/* ── Print ─────────────────────────────────────────────────────────────── */
+
+@media print {
+    .sidebar, .topbar, .btn, nav { display: none !important; }
+    .card { break-inside: avoid; }
+}

@@ -1,0 +1,187 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Professores — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Professores</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ filtro: '', status: '' }">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Professores</h4>
+            <small class="text-muted">{{ professores|length }} professor(es) cadastrado(s)</small>
+        </div>
+        <a href="/cadastros/professores/novo" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>Novo Professor
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <input type="text"
+                           class="form-control form-control-sm"
+                           placeholder="Buscar por nome ou e-mail..."
+                           x-model="filtro">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" x-model="status">
+                        <option value="">Todos os status</option>
+                        <option value="1">Ativo</option>
+                        <option value="0">Inativo</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-secondary" @click="filtro = ''; status = ''">
+                        <i class="bi bi-x-circle me-1"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela desktop -->
+    <div class="card border-0 shadow-sm d-none d-md-block">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Telefone</th>
+                        <th>Disponibilidade</th>
+                        <th class="text-center">Disciplinas</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for p in professores %}
+                <tr x-show="
+                    (filtro === '' || '{{ p.nome|lower|e }}'.includes(filtro.toLowerCase()) || '{{ p.email|lower|e }}'.includes(filtro.toLowerCase()))
+                    && (status === '' || status === '{{ p.ativo ? '1' : '0' }}')
+                ">
+                    <td>
+                        <a href="/cadastros/professores/{{ p.id }}" class="text-decoration-none fw-semibold">
+                            {{ p.nome|e }}
+                        </a>
+                    </td>
+                    <td class="text-muted small">{{ p.email|e }}</td>
+                    <td class="text-muted small">{{ p.telefone|default('—')|e }}</td>
+                    <td>
+                        {% set dias_map = {'seg': 'bg-info text-dark', 'ter': 'bg-info text-dark', 'qua': 'bg-info text-dark', 'qui': 'bg-info text-dark', 'sex': 'bg-info text-dark', 'sáb': 'bg-warning text-dark'} %}
+                        {% if p.dias_disponibilidade is defined and p.dias_disponibilidade %}
+                            {% for dia in p.dias_disponibilidade %}
+                            <span class="badge {{ dias_map[dia]|default('bg-secondary') }} me-1">{{ dia|e }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary rounded-pill">{{ p.disciplinas_count|default(0) }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {{ p.ativo ? 'bg-success' : 'bg-secondary' }}">
+                            {{ p.ativo ? 'Ativo' : 'Inativo' }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/cadastros/professores/{{ p.id }}" class="btn btn-outline-secondary" title="Ver">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/cadastros/professores/{{ p.id }}/editar" class="btn btn-outline-primary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form action="/cadastros/professores/{{ p.id }}/desativar" method="POST" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit"
+                                        class="btn btn-outline-danger"
+                                        title="{{ p.ativo ? 'Desativar' : 'Ativar' }}"
+                                        data-confirm="{{ p.ativo ? 'Desativar o professor ' ~ p.nome|e ~ '?' : 'Ativar o professor ' ~ p.nome|e ~ '?' }}">
+                                    <i class="bi {{ p.ativo ? 'bi-person-x' : 'bi-person-check' }}"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <i class="bi bi-person-badge fs-2 d-block mb-2"></i>
+                        Nenhum professor cadastrado.
+                        <a href="/cadastros/professores/novo" class="d-block mt-2">Cadastrar o primeiro</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Cards mobile -->
+    <div class="d-md-none">
+        {% for p in professores %}
+        <div class="card border-0 shadow-sm mb-3"
+             x-show="
+                (filtro === '' || '{{ p.nome|lower|e }}'.includes(filtro.toLowerCase()) || '{{ p.email|lower|e }}'.includes(filtro.toLowerCase()))
+                && (status === '' || status === '{{ p.ativo ? '1' : '0' }}')
+             ">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <a href="/cadastros/professores/{{ p.id }}" class="fw-bold text-decoration-none">{{ p.nome|e }}</a>
+                        <div class="text-muted small">{{ p.email|e }}</div>
+                        {% if p.telefone is defined and p.telefone %}
+                        <div class="text-muted small">{{ p.telefone|e }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="badge {{ p.ativo ? 'bg-success' : 'bg-secondary' }}">
+                        {{ p.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                </div>
+                <div class="mb-2">
+                    {% if p.dias_disponibilidade is defined and p.dias_disponibilidade %}
+                        {% for dia in p.dias_disponibilidade %}
+                        <span class="badge bg-info text-dark me-1">{{ dia|e }}</span>
+                        {% endfor %}
+                    {% endif %}
+                    <span class="badge bg-primary ms-1">{{ p.disciplinas_count|default(0) }} disciplina(s)</span>
+                </div>
+                <div class="btn-group btn-group-sm w-100">
+                    <a href="/cadastros/professores/{{ p.id }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i>Ver
+                    </a>
+                    <a href="/cadastros/professores/{{ p.id }}/editar" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    <form action="/cadastros/professores/{{ p.id }}/desativar" method="POST" class="d-inline flex-grow-1">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                        <button type="submit"
+                                class="btn btn-outline-danger w-100"
+                                data-confirm="{{ p.ativo ? 'Desativar o professor ' ~ p.nome|e ~ '?' : 'Ativar o professor ' ~ p.nome|e ~ '?' }}">
+                            <i class="bi {{ p.ativo ? 'bi-person-x' : 'bi-person-check' }} me-1"></i>
+                            {{ p.ativo ? 'Desativar' : 'Ativar' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-person-badge fs-2 d-block mb-2"></i>
+            Nenhum professor cadastrado.
+            <a href="/cadastros/professores/novo" class="d-block mt-2">Cadastrar o primeiro</a>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

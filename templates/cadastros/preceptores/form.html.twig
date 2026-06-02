@@ -1,0 +1,239 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ modo == 'criar' ? 'Novo Preceptor' : 'Editar Preceptor' }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/preceptores">Preceptores</a></li>
+<li class="breadcrumb-item active">{{ modo == 'criar' ? 'Novo' : 'Editar' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-xl-9">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-person-check me-2 text-primary"></i>
+            {{ modo == 'criar' ? 'Novo Preceptor' : 'Editar: ' ~ preceptor.nome|e }}
+        </h4>
+        <a href="/cadastros/preceptores" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    {% if errors is defined and errors %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Corrija os erros abaixo antes de continuar:</strong>
+        <ul class="mb-0 mt-2">
+            {% for field, msg in errors %}
+            <li>{{ msg|e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form action="{{ modo == 'criar' ? '/cadastros/preceptores' : '/cadastros/preceptores/' ~ preceptor.id }}"
+          method="POST"
+          novalidate>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+        <!-- Seção: Identificação -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary mb-3">Identificação</h6>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Nome completo <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control {{ errors.nome is defined ? 'is-invalid' : '' }}"
+                               name="nome"
+                               value="{{ preceptor.nome|default('')|e }}"
+                               placeholder="Ex: Dra. Maria Oliveira"
+                               maxlength="200"
+                               required>
+                        {% if errors.nome is defined %}
+                        <div class="invalid-feedback">{{ errors.nome|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Matrícula</label>
+                        <input type="text"
+                               class="form-control {{ errors.matricula is defined ? 'is-invalid' : '' }}"
+                               name="matricula"
+                               value="{{ preceptor.matricula|default('')|e }}"
+                               placeholder="Ex: 7654321"
+                               maxlength="20">
+                        {% if errors.matricula is defined %}
+                        <div class="invalid-feedback">{{ errors.matricula|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">E-mail institucional <span class="text-danger">*</span></label>
+                        <input type="email"
+                               class="form-control {{ errors.email is defined ? 'is-invalid' : '' }}"
+                               name="email"
+                               value="{{ preceptor.email|default('')|e }}"
+                               placeholder="preceptor@universidade.edu.br"
+                               maxlength="200"
+                               required>
+                        {% if errors.email is defined %}
+                        <div class="invalid-feedback">{{ errors.email|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Telefone</label>
+                        <input type="text"
+                               class="form-control {{ errors.telefone is defined ? 'is-invalid' : '' }}"
+                               name="telefone"
+                               value="{{ preceptor.telefone|default('')|e }}"
+                               placeholder="(00) 00000-0000"
+                               maxlength="20">
+                        {% if errors.telefone is defined %}
+                        <div class="invalid-feedback">{{ errors.telefone|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">
+                            Máx. turmas simultâneas
+                            <i class="bi bi-info-circle text-muted" title="Número máximo de turmas que este preceptor pode supervisionar ao mesmo tempo"></i>
+                        </label>
+                        <input type="number"
+                               class="form-control {{ errors.max_turmas_simultaneas is defined ? 'is-invalid' : '' }}"
+                               name="max_turmas_simultaneas"
+                               value="{{ preceptor.max_turmas_simultaneas|default(2) }}"
+                               min="1" max="10">
+                        {% if errors.max_turmas_simultaneas is defined %}
+                        <div class="invalid-feedback">{{ errors.max_turmas_simultaneas|e }}</div>
+                        {% endif %}
+                    </div>
+                    {% if modo == 'editar' %}
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">Status</label>
+                        <div class="form-check form-switch pt-2">
+                            <input class="form-check-input" type="checkbox" name="ativo"
+                                   id="ativo" value="1"
+                                   {{ preceptor.ativo|default(1) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="ativo">Ativo</label>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Disponibilidade semanal -->
+        <div class="card border-0 shadow-sm mb-3"
+             x-data="disponibilidadeForm({{ preceptor.disponibilidades|default([])|json_encode }})">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0">Disponibilidade Semanal</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" @click="adicionar()">
+                        <i class="bi bi-plus-lg me-1"></i>Adicionar horário
+                    </button>
+                </div>
+
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Informe os dias e horários em que o preceptor está disponível para supervisionar estágios.
+                </div>
+
+                <template x-for="(item, i) in linhas" :key="i">
+                    <div class="row g-2 mb-2 align-items-end border-bottom pb-2">
+                        <div class="col-md-2 col-6">
+                            <label class="form-label small fw-semibold">Dia</label>
+                            <select class="form-select form-select-sm"
+                                    :name="`disponibilidade[${i}][dia_semana]`"
+                                    x-model="item.dia_semana">
+                                <option value="1">Segunda</option>
+                                <option value="2">Terça</option>
+                                <option value="3">Quarta</option>
+                                <option value="4">Quinta</option>
+                                <option value="5">Sexta</option>
+                                <option value="6">Sábado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label small fw-semibold">Início</label>
+                            <input type="time"
+                                   class="form-control form-control-sm"
+                                   :name="`disponibilidade[${i}][hora_inicio]`"
+                                   x-model="item.hora_inicio">
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label small fw-semibold">Fim</label>
+                            <input type="time"
+                                   class="form-control form-control-sm"
+                                   :name="`disponibilidade[${i}][hora_fim]`"
+                                   x-model="item.hora_fim">
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label small fw-semibold">Sem. início</label>
+                            <input type="number"
+                                   class="form-control form-control-sm"
+                                   :name="`disponibilidade[${i}][semana_inicio]`"
+                                   x-model="item.semana_inicio"
+                                   min="1" max="20">
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label small fw-semibold">Sem. fim</label>
+                            <input type="number"
+                                   class="form-control form-control-sm"
+                                   :name="`disponibilidade[${i}][semana_fim]`"
+                                   x-model="item.semana_fim"
+                                   min="1" max="20">
+                        </div>
+                        <div class="col-md-2 col-6 d-flex align-items-end">
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger w-100"
+                                    @click="remover(i)"
+                                    x-show="linhas.length > 1">
+                                <i class="bi bi-x-lg"></i> Remover
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <div x-show="linhas.length === 0" class="text-center text-muted py-3">
+                    <i class="bi bi-calendar-x me-2"></i>
+                    Nenhum horário adicionado. Clique em "+ Adicionar horário".
+                </div>
+            </div>
+        </div>
+
+        <!-- Nota sobre disciplinas de estágio -->
+        <div class="alert alert-info border-0 shadow-sm mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            As <strong>disciplinas de estágio</strong> supervisionadas por este preceptor são configuradas
+            na seção <a href="/cadastros/professor_disciplina" class="alert-link">Vínculo Professor × Disciplina</a>.
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="/cadastros/preceptores" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-2"></i>
+                {{ modo == 'criar' ? 'Cadastrar Preceptor' : 'Salvar Alterações' }}
+            </button>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function disponibilidadeForm(initial) {
+    return {
+        linhas: (initial && initial.length) ? initial : [{ dia_semana: '1', hora_inicio: '07:00', hora_fim: '12:00', semana_inicio: 1, semana_fim: 20 }],
+        adicionar() {
+            this.linhas.push({ dia_semana: '1', hora_inicio: '07:00', hora_fim: '12:00', semana_inicio: 1, semana_fim: 20 });
+        },
+        remover(i) {
+            this.linhas.splice(i, 1);
+        }
+    };
+}
+</script>
+{% endblock %}

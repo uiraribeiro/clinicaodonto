@@ -1,0 +1,142 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Relatório por Semana — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/relatorios">Relatórios</a></li>
+<li class="breadcrumb-item active">Por Semana</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-calendar-week me-2 text-primary"></i>Agenda da Semana {{ semana_atual }}</h4>
+        <small class="text-muted">Versão #{{ versao.numero_versao }} · {{ versao.semestre_ref }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/relatorios/exportar/semana/pdf?semana={{ semana_atual }}" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-filetype-pdf me-1"></i>PDF
+        </a>
+        <a href="/relatorios/exportar/semana/xlsx" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel (todas semanas)
+        </a>
+        <a href="/relatorios" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+{# Navegação de semanas #}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted small fw-semibold me-1">Semana:</span>
+            {% for s in ocupacao %}
+                <a href="/relatorios/semana?semana={{ s.numero_semana }}"
+                   class="btn btn-sm {% if s.numero_semana == semana_atual %}btn-primary{% else %}btn-outline-secondary{% endif %} py-0 px-2">
+                    {{ s.numero_semana }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{# Resumo da semana selecionada #}
+{% set semana_info = null %}
+{% for o in ocupacao %}
+    {% if o.numero_semana == semana_atual %}{% set semana_info = o %}{% endif %}
+{% endfor %}
+
+{% if semana_info %}
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold text-primary">{{ semana_info.slots_clinica }}</div>
+            <div class="small text-muted">Slots Clínica</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold text-success">{{ semana_info.slots_lab }}</div>
+            <div class="small text-muted">Slots Lab</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold text-info">{{ semana_info.total_alunos }}</div>
+            <div class="small text-muted">Total Alunos</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm text-center py-2">
+            <div class="fs-4 fw-bold text-warning">{{ (semana_info.total_min / 60)|round(1) }}h</div>
+            <div class="small text-muted">Horas Alocadas</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if agenda is empty %}
+    <div class="card border-0 shadow-sm text-center py-5">
+        <div class="card-body text-muted">
+            <i class="bi bi-calendar-x fs-1 d-block mb-3"></i>
+            Nenhum agendamento encontrado para a semana {{ semana_atual }}.
+        </div>
+    </div>
+{% else %}
+    {% for dia_nome, itens in agenda_por_dia %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent fw-semibold py-2">
+            <i class="bi bi-calendar3 me-2 text-primary"></i>{{ dia_nome }}
+            <span class="badge bg-secondary ms-2">{{ itens|length }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Horário</th>
+                        <th>Turma</th>
+                        <th>Disciplina</th>
+                        <th>Tipo</th>
+                        <th>Espaço</th>
+                        <th>Professor / Preceptor</th>
+                        <th class="text-end">Alunos</th>
+                        <th class="text-end">Duração</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in itens %}
+                    <tr>
+                        <td class="font-monospace small">{{ item.hora_inicio|slice(0,5) }}–{{ item.hora_fim|slice(0,5) }}</td>
+                        <td><strong>{{ item.turma_nome }}</strong></td>
+                        <td>
+                            <span class="d-block">{{ item.disciplina_nome }}</span>
+                            <small class="text-muted">{{ item.disciplina_tipo }}</small>
+                        </td>
+                        <td>
+                            {% if item.espaco_tipo == 'clinica' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Clínica</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Lab</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ item.espaco_tipo|capitalize }} #{{ item.espaco_id }}</td>
+                        <td class="small">
+                            {% if item.professor_nome %}
+                                <span class="text-primary"><i class="bi bi-person me-1"></i>{{ item.professor_nome }}</span>
+                            {% endif %}
+                            {% if item.preceptor_nome %}
+                                <span class="text-success d-block"><i class="bi bi-person-badge me-1"></i>{{ item.preceptor_nome }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ item.num_alunos }}</td>
+                        <td class="text-end small">{{ item.duracao_min }} min</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}

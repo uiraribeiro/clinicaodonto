@@ -1,0 +1,189 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ professor.nome|e }} — Professores — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/professores">Professores</a></li>
+<li class="breadcrumb-item active">{{ professor.nome|e }}</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-person-badge me-2 text-primary"></i>{{ professor.nome|e }}
+        </h4>
+        <small class="text-muted">Dados do professor</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/cadastros/professores" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+        <a href="/cadastros/professores/{{ professor.id }}/editar" class="btn btn-primary">
+            <i class="bi bi-pencil me-2"></i>Editar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <!-- Card: Dados do professor -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom fw-semibold">
+                <i class="bi bi-person-circle me-2 text-primary"></i>Identificação
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted small">Nome</dt>
+                    <dd class="col-sm-7 fw-semibold">{{ professor.nome|e }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">E-mail</dt>
+                    <dd class="col-sm-7">
+                        <a href="mailto:{{ professor.email|e }}" class="text-decoration-none">{{ professor.email|e }}</a>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Telefone</dt>
+                    <dd class="col-sm-7">{{ professor.telefone|default('—')|e }}</dd>
+
+                    <dt class="col-sm-5 text-muted small">Matrícula</dt>
+                    <dd class="col-sm-7">
+                        {% if professor.matricula is defined and professor.matricula %}
+                        <code>{{ professor.matricula|e }}</code>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted small">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ professor.ativo ? 'bg-success' : 'bg-secondary' }}">
+                            {{ professor.ativo ? 'Ativo' : 'Inativo' }}
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card: Disciplinas vinculadas -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom fw-semibold">
+                <i class="bi bi-book me-2 text-primary"></i>Disciplinas Vinculadas
+            </div>
+            <div class="card-body">
+                {% if professor.disciplinas is defined and professor.disciplinas %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for disc in professor.disciplinas %}
+                        <a href="/cadastros/disciplinas/{{ disc.id }}"
+                           class="badge bg-primary text-decoration-none fs-6 fw-normal"
+                           title="{{ disc.nome|e }}">
+                            {{ disc.nome|e }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-book fs-3 d-block mb-2 opacity-50"></i>
+                        Nenhuma disciplina vinculada.
+                    </div>
+                {% endif %}
+
+                {% if professor.disciplinas_count is defined and professor.disciplinas_count > 0 %}
+                <div class="mt-3 pt-3 border-top">
+                    <a href="/cadastros/professor_disciplina?professor={{ professor.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-link-45deg me-1"></i>Gerenciar vínculos
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card: Resumo rápido -->
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom fw-semibold">
+                <i class="bi bi-bar-chart me-2 text-primary"></i>Resumo
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <div class="fs-2 fw-bold text-primary">{{ professor.disciplinas_count|default(0) }}</div>
+                        <div class="text-muted small">Disciplinas</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fs-2 fw-bold text-info">
+                            {% if professor.disponibilidades is defined %}
+                                {{ professor.disponibilidades|length }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <div class="text-muted small">Disponibilidades</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card: Disponibilidade semanal -->
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-bottom fw-semibold">
+                <i class="bi bi-calendar-week me-2 text-primary"></i>Disponibilidade Semanal
+            </div>
+            <div class="card-body">
+                {% if professor.disponibilidades is defined and professor.disponibilidades %}
+                    {% set dias_label = {1: 'Segunda', 2: 'Terça', 3: 'Quarta', 4: 'Quinta', 5: 'Sexta', 6: 'Sábado'} %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Hora início</th>
+                                    <th>Hora fim</th>
+                                    <th class="text-center">Semana início</th>
+                                    <th class="text-center">Semana fim</th>
+                                    <th class="text-center">Duração</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for disp in professor.disponibilidades %}
+                            <tr>
+                                <td>
+                                    <span class="badge {{ disp.dia_semana == 6 ? 'bg-warning text-dark' : 'bg-info text-dark' }}">
+                                        {{ dias_label[disp.dia_semana]|default('Dia ' ~ disp.dia_semana) }}
+                                    </span>
+                                </td>
+                                <td class="fw-semibold">{{ disp.hora_inicio|e }}</td>
+                                <td class="fw-semibold">{{ disp.hora_fim|e }}</td>
+                                <td class="text-center">Sem. {{ disp.semana_inicio|e }}</td>
+                                <td class="text-center">Sem. {{ disp.semana_fim|e }}</td>
+                                <td class="text-center text-muted small">
+                                    Sems. {{ disp.semana_inicio }}&ndash;{{ disp.semana_fim }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-calendar-x fs-3 d-block mb-2 opacity-50"></i>
+                        Nenhuma disponibilidade cadastrada.
+                        <a href="/cadastros/professores/{{ professor.id }}/editar" class="d-block mt-2 small">
+                            Adicionar disponibilidade
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

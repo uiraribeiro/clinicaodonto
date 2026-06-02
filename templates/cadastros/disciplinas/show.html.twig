@@ -1,0 +1,120 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ disciplina.nome|e }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/cadastros/disciplinas">Disciplinas</a></li>
+<li class="breadcrumb-item active">{{ disciplina.codigo|e }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-book me-2 text-primary"></i>{{ disciplina.nome|e }}</h4>
+        <code class="text-muted">{{ disciplina.codigo|e }}</code>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/cadastros/disciplinas/{{ disciplina.id }}/editar" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-2"></i>Editar
+        </a>
+        <a href="/cadastros/disciplinas" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold py-3">
+                <i class="bi bi-info-circle me-2 text-primary"></i>Dados Gerais
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted">Tipo</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ disciplina.tipo == 'estagio' ? 'bg-success' : 'bg-primary' }}">
+                            {{ disciplina.tipo == 'estagio' ? 'Estágio' : 'Prática Comum' }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted">Espaço</dt>
+                    <dd class="col-sm-7">
+                        {% if disciplina.usa_clinica %}<span class="badge bg-primary me-1">Clínica</span>{% endif %}
+                        {% if disciplina.usa_laboratorio %}<span class="badge bg-info text-dark">Laboratório</span>{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted">Carga horária</dt>
+                    <dd class="col-sm-7">{{ disciplina.carga_horaria_pratica }}h práticas</dd>
+
+                    <dt class="col-sm-5 text-muted">Mín. encontros</dt>
+                    <dd class="col-sm-7">{{ disciplina.minimo_encontros }} encontros/semestre</dd>
+
+                    <dt class="col-sm-5 text-muted">Duração/encontro</dt>
+                    <dd class="col-sm-7">{{ disciplina.duracao_encontro_min }} min ({{ (disciplina.duracao_encontro_min / 60)|round(1) }}h)</dd>
+
+                    <dt class="col-sm-5 text-muted">Prioridade</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ disciplina.prioridade <= 3 ? 'bg-danger' : (disciplina.prioridade <= 6 ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                            {{ disciplina.prioridade }}/10
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted">Alternância</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ disciplina.permite_alternancia ? 'bg-info text-dark' : 'bg-light text-muted' }}">
+                            {{ disciplina.permite_alternancia ? 'Permite semanas alternadas' : 'Sem alternância' }}
+                        </span>
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted">Semanas</dt>
+                    <dd class="col-sm-7">{{ disciplina.semana_inicio }}ª a {{ disciplina.semana_fim }}ª semana</dd>
+
+                    <dt class="col-sm-5 text-muted">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge {{ disciplina.ativo ? 'bg-success' : 'bg-secondary' }}">
+                            {{ disciplina.ativo ? 'Ativa' : 'Inativa' }}
+                        </span>
+                    </dd>
+
+                    {% if disciplina.observacoes %}
+                    <dt class="col-sm-5 text-muted">Observações</dt>
+                    <dd class="col-sm-7">{{ disciplina.observacoes|e }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold py-3">
+                <i class="bi bi-person-badge me-2 text-primary"></i>Professores Vinculados
+            </div>
+            <div class="card-body">
+                {% if professores is defined and professores %}
+                <ul class="list-group list-group-flush">
+                    {% for p in professores %}
+                    <li class="list-group-item px-0">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <i class="bi bi-person me-2 text-muted"></i>
+                                <a href="/cadastros/professores/{{ p.professor_id }}" class="text-decoration-none">{{ p.professor_nome|e }}</a>
+                            </div>
+                            <small class="text-muted">desde {{ p.data_inicio|date('d/m/Y') }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Nenhum professor vinculado.
+                    <a href="/cadastros/professor-disciplina">Vincular professor</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

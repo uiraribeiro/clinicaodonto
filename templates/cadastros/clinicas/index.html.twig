@@ -1,0 +1,147 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Clínica — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Clínica</li>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0 fw-bold">
+        <i class="bi bi-hospital me-2 text-primary"></i>Clínica Odontológica
+    </h4>
+    <div class="btn-group btn-group-sm">
+        <a href="/cadastros/clinicas/{{ clinica.id }}/editar" class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i>Editar Clínica
+        </a>
+        <a href="/cadastros/clinicas/{{ clinica.id }}/bloqueios" class="btn btn-outline-warning">
+            <i class="bi bi-slash-circle me-1"></i>Gerenciar Bloqueios
+        </a>
+    </div>
+</div>
+
+<!-- Cards de Indicadores -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fs-2 fw-bold text-primary">{{ clinica.quantidade_cadeiras }}</div>
+                <div class="text-muted small">Cadeiras</div>
+                <i class="bi bi-hospital fs-4 text-primary opacity-50 mt-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fs-2 fw-bold text-info">{{ clinica.capacidade_por_cadeira }}</div>
+                <div class="text-muted small">Alunos por Cadeira</div>
+                <i class="bi bi-person-fill fs-4 text-info opacity-50 mt-1"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        {% set capacidade_total = clinica.quantidade_cadeiras * clinica.capacidade_por_cadeira %}
+        <div class="card border-0 shadow-sm text-center h-100 {{ capacidade_total >= 28 ? 'border-success border' : '' }}">
+            <div class="card-body py-4">
+                <div class="fs-2 fw-bold {{ capacidade_total >= 28 ? 'text-success' : 'text-secondary' }}">
+                    {{ capacidade_total }}
+                </div>
+                <div class="text-muted small">Capacidade Total</div>
+                <span class="badge {{ capacidade_total >= 28 ? 'bg-success' : 'bg-secondary' }} mt-1">
+                    {{ capacidade_total >= 28 ? 'Capacidade plena' : 'Capacidade reduzida' }}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center h-100">
+            <div class="card-body py-4">
+                <div class="fw-bold text-dark">Seg–Sex</div>
+                <div class="small text-muted">{{ clinica.hora_abertura }} – {{ clinica.hora_fechamento }}</div>
+                <hr class="my-2">
+                <div class="fw-bold text-dark">Sábado</div>
+                <div class="small text-muted">{{ clinica.hora_abertura_sabado }} – {{ clinica.hora_fechamento_sabado }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if clinica.observacoes %}
+<div class="alert alert-light border mb-4">
+    <i class="bi bi-info-circle me-2 text-primary"></i>
+    <strong>Observações:</strong> {{ clinica.observacoes|e }}
+</div>
+{% endif %}
+
+<!-- Bloqueios Futuros -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold border-bottom d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-slash-circle text-warning me-2"></i>Bloqueios Futuros</span>
+        <a href="/cadastros/clinicas/{{ clinica.id }}/bloqueios" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar Bloqueio
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if bloqueios is defined and bloqueios %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data Início</th>
+                        <th>Data Fim</th>
+                        <th>Horário</th>
+                        <th>Motivo</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bloqueios %}
+                    <tr>
+                        <td>{{ b.data_inicio|date('d/m/Y') }}</td>
+                        <td>{{ b.data_fim|date('d/m/Y') }}</td>
+                        <td>
+                            {% if b.hora_inicio %}
+                            {{ b.hora_inicio }} – {{ b.hora_fim }}
+                            {% else %}
+                            <span class="badge bg-secondary">Dia inteiro</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ b.motivo|e }}</td>
+                        <td>
+                            {% set tipoCores = {'feriado': 'danger', 'recesso': 'warning', 'evento': 'info', 'manutencao': 'secondary'} %}
+                            <span class="badge bg-{{ tipoCores[b.tipo] ?? 'secondary' }}">
+                                {{ b.tipo|capitalize|e }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <form action="/cadastros/clinicas/{{ clinica.id }}/bloqueios/{{ b.id }}/excluir"
+                                      method="POST"
+                                      onsubmit="return confirm('Excluir este bloqueio?')">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-check-circle fs-3 d-block mb-2 text-success opacity-75"></i>
+            Nenhum bloqueio futuro cadastrado.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

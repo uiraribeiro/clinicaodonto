@@ -1,0 +1,322 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="dashboard()" x-init="init()">
+
+    <!-- Cabeçalho da página -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h4>
+            <small class="text-muted">Visão geral do semestre</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/agenda/gerar" class="btn btn-success">
+                <i class="bi bi-magic me-2"></i>Gerar Agenda
+            </a>
+            <a href="/ia/sugestoes/{{ indicadores.versao_id ?? '' }}" class="btn btn-outline-primary">
+                <i class="bi bi-robot me-2"></i>Sugestões IA
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de indicadores -->
+    <div class="row g-3 mb-4">
+
+        <!-- Ocupação Clínica -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Ocupação da Clínica</p>
+                            <h3 class="fw-bold mb-0 {{ indicadores.ocupacao_clinica_pct >= 80 ? 'text-success' : (indicadores.ocupacao_clinica_pct >= 50 ? 'text-warning' : 'text-danger') }}">
+                                {{ indicadores.ocupacao_clinica_pct }}%
+                            </h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-hospital fs-4 text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height:6px">
+                        <div class="progress-bar {{ indicadores.ocupacao_clinica_pct >= 80 ? 'bg-success' : (indicadores.ocupacao_clinica_pct >= 50 ? 'bg-warning' : 'bg-danger') }}"
+                             style="width:{{ indicadores.ocupacao_clinica_pct }}%"></div>
+                    </div>
+                    <small class="text-muted">15 cadeiras × 2 alunos = 30 max</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ocupação Laboratório -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Ocupação do Laboratório</p>
+                            <h3 class="fw-bold mb-0 {{ indicadores.ocupacao_lab_pct >= 80 ? 'text-success' : (indicadores.ocupacao_lab_pct >= 50 ? 'text-warning' : 'text-danger') }}">
+                                {{ indicadores.ocupacao_lab_pct }}%
+                            </h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-mortarboard fs-4 text-info"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height:6px">
+                        <div class="progress-bar bg-info"
+                             style="width:{{ indicadores.ocupacao_lab_pct }}%"></div>
+                    </div>
+                    <small class="text-muted">30 assentos disponíveis</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conflitos -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 {{ indicadores.total_conflitos > 0 ? 'border-danger border' : '' }}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Conflitos em Aberto</p>
+                            <h3 class="fw-bold mb-0 {{ indicadores.total_conflitos > 0 ? 'text-danger' : 'text-success' }}">
+                                {{ indicadores.total_conflitos }}
+                            </h3>
+                        </div>
+                        <div class="{{ indicadores.total_conflitos > 0 ? 'bg-danger' : 'bg-success' }} bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-exclamation-triangle fs-4 {{ indicadores.total_conflitos > 0 ? 'text-danger' : 'text-success' }}"></i>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        {% if indicadores.total_conflitos == 0 %}
+                        Nenhum conflito detectado
+                        {% else %}
+                        Requer atenção imediata
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Turmas sem alocação -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Turmas s/ Alocação</p>
+                            <h3 class="fw-bold mb-0 {{ indicadores.turmas_sem_alocacao > 0 ? 'text-warning' : 'text-success' }}">
+                                {{ indicadores.turmas_sem_alocacao }}
+                            </h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 rounded-3 p-2">
+                            <i class="bi bi-people fs-4 text-warning"></i>
+                        </div>
+                    </div>
+                    <small class="text-muted">Disciplinas sem horário definido</small>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Linha 2: Agenda da semana + Conflitos -->
+    <div class="row g-3 mb-4">
+
+        <!-- Agenda da semana (mini grade) -->
+        <div class="col-12 col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-week me-2"></i>Semana {{ semana_atual }}</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <a href="/?semana={{ semana_atual - 1 }}"
+                           class="btn btn-sm btn-outline-secondary {{ semana_atual <= 1 ? 'disabled' : '' }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                        <span class="badge bg-primary">Semana {{ semana_atual }}/{{ total_semanas }}</span>
+                        <a href="/?semana={{ semana_atual + 1 }}"
+                           class="btn btn-sm btn-outline-secondary {{ semana_atual >= total_semanas ? 'disabled' : '' }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="/dashboard/semana?semana={{ semana_atual }}" class="btn btn-sm btn-primary">
+                            Ver tudo
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0" id="grade-semana">
+                    {% if agenda_semana is empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                        Nenhum agendamento para esta semana.<br>
+                        <a href="/agenda/gerar" class="btn btn-sm btn-primary mt-2">Gerar Agenda</a>
+                    </div>
+                    {% else %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Dia</th>
+                                    <th>Horário</th>
+                                    <th>Espaço</th>
+                                    <th>Turma</th>
+                                    <th>Disciplina</th>
+                                    <th>Responsável</th>
+                                    <th>Alunos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% set dias = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'] %}
+                            {% for ag in agenda_semana %}
+                            <tr>
+                                <td class="fw-semibold">{{ dias[ag.dia_semana] }}</td>
+                                <td class="text-nowrap">
+                                    {{ ag.hora_inicio|slice(0, 5) }}–{{ ag.hora_fim|slice(0, 5) }}
+                                </td>
+                                <td>
+                                    <span class="badge {{ ag.espaco_tipo == 'clinica' ? 'bg-primary' : 'bg-info text-dark' }}">
+                                        {{ ag.espaco_tipo == 'clinica' ? 'Clínica' : 'Lab' }}
+                                    </span>
+                                </td>
+                                <td>{{ ag.turma_nome|e }}</td>
+                                <td class="text-truncate" style="max-width:160px" title="{{ ag.disciplina_nome|e }}">
+                                    {{ ag.disciplina_nome|e }}
+                                </td>
+                                <td>{{ (ag.professor_nome ?? ag.preceptor_nome ?? '—')|e }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ ag.num_alunos }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de conflitos -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Conflitos
+                        {% if conflitos|length > 0 %}
+                        <span class="badge bg-danger ms-1">{{ conflitos|length }}</span>
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    {% if conflitos is empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle text-success fs-2 d-block mb-2"></i>
+                        Nenhum conflito em aberto!
+                    </div>
+                    {% else %}
+                    <ul class="list-group list-group-flush">
+                    {% for c in conflitos %}
+                        <li class="list-group-item py-2">
+                            <div class="d-flex gap-2 align-items-start">
+                                <span class="badge mt-1
+                                    {{ c.severidade == 'critico' ? 'bg-danger' :
+                                       c.severidade == 'alto' ? 'bg-warning text-dark' :
+                                       c.severidade == 'medio' ? 'bg-info text-dark' : 'bg-secondary' }}">
+                                    {{ c.severidade|capitalize }}
+                                </span>
+                                <div>
+                                    <small class="fw-semibold d-block">{{ c.tipo|replace({'_': ' '})|capitalize|e }}</small>
+                                    <small class="text-muted">{{ c.descricao|e|slice(0, 80) }}{% if c.descricao|length > 80 %}…{% endif %}</small>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                {% if indicadores.versao_id %}
+                <div class="card-footer bg-white">
+                    <a href="/ia/sugestoes/{{ indicadores.versao_id }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-robot me-2"></i>Ver sugestões da IA
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Gargalos detectados -->
+    {% if gargalos is not empty %}
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-warning border">
+                <div class="card-header bg-warning bg-opacity-10 py-3">
+                    <h6 class="mb-0 fw-bold text-warning">
+                        <i class="bi bi-speedometer me-2"></i>Gargalos Detectados
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Semana</th>
+                                    <th>Início</th>
+                                    <th>Alunos na Clínica</th>
+                                    <th>Capacidade</th>
+                                    <th>Excesso</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for g in gargalos %}
+                            <tr class="table-warning">
+                                <td>Semana {{ g.numero_semana }}</td>
+                                <td>{{ g.data_inicio|date('d/m') }}</td>
+                                <td class="fw-bold text-danger">{{ g.total_alunos }}</td>
+                                <td>{{ g.cap_clinica }}</td>
+                                <td class="text-danger fw-bold">+{{ g.total_alunos - g.cap_clinica }}</td>
+                                <td>
+                                    <a href="/ia/sugestoes/{{ indicadores.versao_id }}?semana={{ g.numero_semana }}"
+                                       class="btn btn-sm btn-warning">
+                                        <i class="bi bi-robot"></i> Resolver
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function dashboard() {
+    return {
+        init() {
+            // Atualiza indicadores a cada 5 minutos
+            setInterval(() => this.refreshIndicadores(), 300000);
+        },
+        refreshIndicadores() {
+            fetch('/api/indicadores')
+                .then(r => r.json())
+                .then(data => {
+                    // Alpine reage automaticamente se usarmos store
+                    console.log('Indicadores atualizados', data);
+                });
+        }
+    }
+}
+</script>
+{% endblock %}

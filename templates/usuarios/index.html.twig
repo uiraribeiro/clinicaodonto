@@ -1,0 +1,166 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Usuários — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administração</li>
+<li class="breadcrumb-item active">Usuários</li>
+{% endblock %}
+
+{% block content %}
+<div
+    x-data="{
+        filtro: '',
+        usuarios: {{ usuarios | json_encode | raw }},
+        get filtrados() {
+            const q = this.filtro.toLowerCase().trim();
+            if (!q) return this.usuarios;
+            return this.usuarios.filter(u =>
+                u.nome.toLowerCase().includes(q) ||
+                u.email.toLowerCase().includes(q)
+            );
+        }
+    }"
+>
+
+    {# ── Cabeçalho ─────────────────────────────────────────────────────────── #}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-person-gear me-2 text-primary"></i>Usuários
+        </h4>
+        <a href="/usuarios/novo" class="btn btn-primary">
+            <i class="bi bi-person-plus me-2"></i>Novo Usuário
+        </a>
+    </div>
+
+    {# ── Filtro ────────────────────────────────────────────────────────────── #}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input
+                            type="text"
+                            class="form-control border-start-0"
+                            placeholder="Filtrar por nome ou e-mail..."
+                            x-model="filtro"
+                            autocomplete="off"
+                        >
+                        <button
+                            class="btn btn-outline-secondary"
+                            type="button"
+                            x-show="filtro !== ''"
+                            @click="filtro = ''"
+                            title="Limpar filtro"
+                        >
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-auto ms-auto text-muted small">
+                    <span x-text="filtrados.length"></span> de {{ usuarios | length }} usuário(s)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Tabela ────────────────────────────────────────────────────────────── #}
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">Nome</th>
+                        <th>E-mail</th>
+                        <th>Perfil</th>
+                        <th class="text-center">Status</th>
+                        <th>Último login</th>
+                        <th class="text-end pe-3">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# Linha renderizada via Alpine.js #}
+                    <template x-for="u in filtrados" :key="u.id">
+                        <tr>
+                            {# Nome #}
+                            <td class="ps-3 fw-semibold" x-text="u.nome"></td>
+
+                            {# E-mail #}
+                            <td>
+                                <span class="text-muted" x-text="u.email"></span>
+                            </td>
+
+                            {# Perfil — badge colorido por slug #}
+                            <td>
+                                <span
+                                    class="badge"
+                                    :class="{
+                                        'bg-danger':    u.perfil_slug === 'admin',
+                                        'bg-primary':   u.perfil_slug === 'coordenador',
+                                        'bg-info text-dark': u.perfil_slug === 'professor',
+                                        'bg-success':   u.perfil_slug === 'preceptor',
+                                        'bg-secondary': u.perfil_slug === 'secretaria'
+                                    }"
+                                    x-text="u.perfil_nome"
+                                ></span>
+                            </td>
+
+                            {# Status #}
+                            <td class="text-center">
+                                <span
+                                    class="badge"
+                                    :class="u.ativo ? 'bg-success' : 'bg-secondary'"
+                                    x-text="u.ativo ? 'Ativo' : 'Inativo'"
+                                ></span>
+                            </td>
+
+                            {# Último login #}
+                            <td>
+                                <span
+                                    class="text-muted small"
+                                    x-text="u.ultimo_login ? new Date(u.ultimo_login).toLocaleString('pt-BR') : '—'"
+                                ></span>
+                            </td>
+
+                            {# Ações #}
+                            <td class="text-end pe-3">
+                                <div class="btn-group btn-group-sm">
+                                    <a
+                                        :href="'/usuarios/' + u.id"
+                                        class="btn btn-outline-secondary"
+                                        title="Visualizar"
+                                    >
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a
+                                        :href="'/usuarios/' + u.id + '/editar'"
+                                        class="btn btn-outline-primary"
+                                        title="Editar"
+                                    >
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+
+                    {# Estado vazio #}
+                    <tr x-show="filtrados.length === 0">
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-person-x fs-3 d-block mb-2 opacity-50"></i>
+                            Nenhum usuário encontrado
+                            <template x-if="filtro !== ''">
+                                <span> para "<strong x-text="filtro"></strong>"</span>
+                            </template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ usuario.nome|e }} — Usuários — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Administração</li>
+<li class="breadcrumb-item"><a href="/usuarios">Usuários</a></li>
+<li class="breadcrumb-item active">{{ usuario.nome|e }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-xl-8">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-person-circle me-2 text-primary"></i>
+            {{ usuario.nome|e }}
+        </h4>
+        <div class="d-flex gap-2">
+            <a href="/usuarios/{{ usuario.id }}/editar" class="btn btn-outline-primary">
+                <i class="bi bi-pencil me-2"></i>Editar
+            </a>
+            <a href="/usuarios" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4 text-muted">Nome</dt>
+                <dd class="col-sm-8">{{ usuario.nome|e }}</dd>
+
+                <dt class="col-sm-4 text-muted">E-mail</dt>
+                <dd class="col-sm-8">{{ usuario.email|e }}</dd>
+
+                <dt class="col-sm-4 text-muted">Perfil</dt>
+                <dd class="col-sm-8">
+                    <span class="badge
+                        {% if usuario.perfil_slug == 'admin' %}bg-danger
+                        {% elseif usuario.perfil_slug == 'coordenador' %}bg-primary
+                        {% elseif usuario.perfil_slug == 'professor' %}bg-info text-dark
+                        {% elseif usuario.perfil_slug == 'preceptor' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {{ usuario.perfil_slug|e }}
+                    </span>
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Status</dt>
+                <dd class="col-sm-8">
+                    <span class="badge {{ usuario.ativo ? 'bg-success' : 'bg-secondary' }}">
+                        {{ usuario.ativo ? 'Ativo' : 'Inativo' }}
+                    </span>
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Último login</dt>
+                <dd class="col-sm-8">
+                    {{ usuario.ultimo_login ? usuario.ultimo_login : '—' }}
+                </dd>
+
+                <dt class="col-sm-4 text-muted">Criado em</dt>
+                <dd class="col-sm-8">{{ usuario.created_at }}</dd>
+            </dl>
+        </div>
+    </div>
+
+</div>
+</div>
+{% endblock %}

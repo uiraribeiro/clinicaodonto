@@ -1,0 +1,160 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Agenda Mensal — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+<li class="breadcrumb-item active">
+    {% set meses = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'] %}
+    {{ meses[mes] }} / {{ ano }}
+</li>
+{% endblock %}
+
+{% block content %}
+{% set meses_label = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'] %}
+{% set mes_ant = mes == 1 ? 12 : mes - 1 %}
+{% set ano_ant  = mes == 1 ? ano - 1 : ano %}
+{% set mes_prox = mes == 12 ? 1 : mes + 1 %}
+{% set ano_prox = mes == 12 ? ano + 1 : ano %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2 text-primary"></i>Agenda Mensal</h4>
+        <small class="text-muted">{{ meses_label[mes] }} de {{ ano }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="?mes={{ mes_ant }}&ano={{ ano_ant }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <span class="btn btn-sm btn-primary disabled">{{ meses_label[mes] }}/{{ ano }}</span>
+        <a href="?mes={{ mes_prox }}&ano={{ ano_prox }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        <a href="?mes={{ 'now'|date('n') }}&ano={{ 'now'|date('Y') }}" class="btn btn-sm btn-outline-primary">Hoje</a>
+    </div>
+</div>
+
+<!-- Legenda -->
+<div class="d-flex gap-3 mb-3 flex-wrap small">
+    <span><span class="badge bg-primary me-1">&nbsp;&nbsp;</span>Tem aulas</span>
+    <span><span class="badge bg-warning text-dark me-1">&nbsp;&nbsp;</span>Alta ocupação (&gt;80%)</span>
+    <span><span class="badge bg-danger me-1">&nbsp;&nbsp;</span>Gargalo (capacidade excedida)</span>
+    <span><span class="badge bg-secondary me-1">&nbsp;&nbsp;</span>Feriado/Recesso</span>
+</div>
+
+<!-- Grade do calendário -->
+{% set mes_pad = mes < 10 ? '0' ~ mes : mes %}
+{% set primeiro_dia_semana = "#{ano}-#{mes_pad}-01"|date('N') %}
+{# N: 1=seg, 7=dom — usamos segunda como primeiro dia #}
+{% set dias_no_mes = "#{ano}-#{mes_pad}-01"|date_modify('last day of this month')|date('j') %}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-2 p-md-3">
+        <!-- Cabeçalho dias da semana -->
+        <div class="row g-1 mb-1 text-center">
+            {% for dia in ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'] %}
+            <div class="col">
+                <div class="small fw-semibold text-muted py-1
+                    {{ dia == 'Sáb' or dia == 'Dom' ? 'text-danger' : '' }}">
+                    {{ dia }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Células do calendário -->
+        {% set celula = 1 %}
+        {% set dia_atual = 1 %}
+
+        {% for semana in 1..6 %}
+        {% if dia_atual <= dias_no_mes %}
+        <div class="row g-1 mb-1">
+            {% for col in 1..7 %}
+            {% set eh_do_mes = (semana == 1 and col < primeiro_dia_semana) == false and dia_atual <= dias_no_mes %}
+
+            <div class="col">
+                {% if eh_do_mes and not (semana == 1 and col < primeiro_dia_semana) %}
+                    {% set data_str = "#{ano}-#{mes_pad}-#{dia_atual < 10 ? '0' ~ dia_atual : dia_atual}" %}
+                    {% set info = calendario[data_str] ?? null %}
+                    {% set eh_hoje = data_str == 'now'|date('Y-m-d') %}
+
+                    <a href="/dashboard/dia?data={{ data_str }}"
+                       class="d-block text-decoration-none rounded p-1 p-md-2 text-center
+                              {{ eh_hoje ? 'border border-primary border-2' : '' }}
+                              {% if info %}
+                                  {% set pct = info.total_alunos is defined ? (info.total_alunos / 60 * 100)|round : 0 %}
+                                  {{ pct >= 100 ? 'bg-danger bg-opacity-20' : (pct >= 80 ? 'bg-warning bg-opacity-20' : 'bg-primary bg-opacity-10') }}
+                              {% else %}
+                                  bg-light
+                              {% endif %}"
+                       style="min-height:56px">
+                        <div class="fw-bold {{ eh_hoje ? 'text-primary' : 'text-dark' }}" style="font-size:.9rem">
+                            {{ dia_atual }}
+                        </div>
+                        {% if info %}
+                        <div style="font-size:.65rem" class="text-truncate">
+                            {% if info.alunos_clinica > 0 %}
+                            <span class="text-primary">C:{{ info.alunos_clinica }}</span>
+                            {% endif %}
+                            {% if info.alunos_lab > 0 %}
+                            <span class="text-info ms-1">L:{{ info.alunos_lab }}</span>
+                            {% endif %}
+                        </div>
+                        <div style="font-size:.6rem" class="text-muted">
+                            {{ info.total_agendamentos }} aula(s)
+                        </div>
+                        {% endif %}
+                    </a>
+                    {% set dia_atual = dia_atual + 1 %}
+                {% elseif semana == 1 and col < primeiro_dia_semana %}
+                    <div class="bg-light rounded p-1" style="min-height:56px; opacity:.3"></div>
+                {% else %}
+                    <div style="min-height:56px"></div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Resumo do mês -->
+<div class="row g-3 mt-2">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Resumo de {{ meses_label[mes] }}</h6>
+                <div class="row text-center g-3">
+                    {% set total_slots = 0 %}
+                    {% set total_alunos_mes = 0 %}
+                    {% set dias_com_aula = 0 %}
+                    {% for data, info in calendario %}
+                        {% set total_slots = total_slots + info.total_agendamentos %}
+                        {% set total_alunos_mes = total_alunos_mes + info.total_alunos %}
+                        {% set dias_com_aula = dias_com_aula + 1 %}
+                    {% endfor %}
+                    <div class="col-6 col-md-3">
+                        <div class="fs-3 fw-bold text-primary">{{ dias_com_aula }}</div>
+                        <div class="small text-muted">Dias com aula</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="fs-3 fw-bold text-secondary">{{ total_slots }}</div>
+                        <div class="small text-muted">Total de slots</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="fs-3 fw-bold text-success">{{ total_alunos_mes }}</div>
+                        <div class="small text-muted">Presenças esperadas</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="fs-3 fw-bold text-info">
+                            {{ dias_com_aula > 0 ? (total_alunos_mes / dias_com_aula)|round : 0 }}
+                        </div>
+                        <div class="small text-muted">Média alunos/dia</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Gerar Agenda{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Gerar Agenda Semestral</h1>
+        <small class="text-muted">O otimizador alocará todas as turmas/disciplinas respeitando as restrições cadastradas.</small>
+    </div>
+    <a href="/agenda" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Configuração da Geração</h6>
+            </div>
+            <div class="card-body">
+                <form action="/agenda/gerar" method="post" id="formGerar" x-data="{ loading: false }" @submit="loading = true">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+                    <div class="mb-3">
+                        <label for="semestre_id" class="form-label fw-semibold">Semestre <span class="text-danger">*</span></label>
+                        <select name="semestre_id" id="semestre_id" class="form-select" required>
+                            <option value="">Selecione o semestre...</option>
+                            {% for s in semestres %}
+                                <option value="{{ s.id }}"
+                                    {% if semestreAtivo and s.id == semestreAtivo.id %}selected{% endif %}>
+                                    {{ s.referencia }}
+                                    {% if s.status == 'ativo' %} (Ativo){% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="descricao" class="form-label fw-semibold">Descrição (opcional)</label>
+                        <input type="text" name="descricao" id="descricao" class="form-control"
+                               placeholder="Ex: Primeira tentativa com novos preceptores">
+                        <div class="form-text">Ajuda a identificar esta versão no histórico.</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" :disabled="loading">
+                            <span x-show="!loading">
+                                <i class="bi bi-lightning-fill me-2"></i>Iniciar Otimização
+                            </span>
+                            <span x-show="loading">
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                Otimizando... aguarde
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Como funciona</h6>
+            </div>
+            <div class="card-body">
+                <ol class="small mb-0 ps-3">
+                    <li class="mb-2">Carrega todos os pares turma × disciplina do semestre com espaço físico (clínica ou lab).</li>
+                    <li class="mb-2">Gera todos os blocos de horário possíveis para cada espaço com base nos horários de funcionamento.</li>
+                    <li class="mb-2">Executa o algoritmo de backtracking com propagação de restrições, respeitando disponibilidade de professores e preceptores, capacidade dos espaços e feriados.</li>
+                    <li class="mb-2">Detecta conflitos remanescentes e gera relatório auditável.</li>
+                    <li>Salva a versão como <strong>rascunho</strong> — você pode revisar antes de publicar.</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card border-warning border-0 shadow-sm">
+            <div class="card-header bg-warning bg-opacity-10 text-warning-emphasis">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Antes de gerar</h6>
+            </div>
+            <div class="card-body small">
+                <ul class="mb-0 ps-3">
+                    <li>Verifique se todas as disciplinas têm <strong>espaço</strong> configurado (clínica/lab)</li>
+                    <li>Confirme a disponibilidade de professores e preceptores</li>
+                    <li>Certifique-se que os bloqueios de espaço estão corretos</li>
+                    <li>Cadastre os feriados do semestre em <a href="/cadastros/semestres">Semestres</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

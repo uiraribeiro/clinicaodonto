@@ -1,0 +1,211 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ modo == 'criar' ? 'Nova Disciplina' : 'Editar Disciplina' }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/disciplinas">Disciplinas</a></li>
+<li class="breadcrumb-item active">{{ modo == 'criar' ? 'Nova' : 'Editar' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-xl-9">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-book me-2 text-primary"></i>
+            {{ modo == 'criar' ? 'Nova Disciplina' : 'Editar: ' ~ disciplina.nome|e }}
+        </h4>
+        <a href="/cadastros/disciplinas" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    {% if errors is defined and errors %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Corrija os erros abaixo antes de continuar:</strong>
+        <ul class="mb-0 mt-2">
+            {% for field, msg in errors %}
+            <li>{{ msg|e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form action="{{ modo == 'criar' ? '/cadastros/disciplinas' : '/cadastros/disciplinas/' ~ disciplina.id }}"
+          method="POST"
+          novalidate>
+        <!-- CSRF Token obrigatório -->
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="form-section mb-4">
+                    <h6 class="fw-bold text-primary mb-3">Identificação</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
+                            <input type="text"
+                                   class="form-control text-uppercase {{ errors.codigo is defined ? 'is-invalid' : '' }}"
+                                   name="codigo"
+                                   value="{{ disciplina.codigo|default('')|e }}"
+                                   placeholder="ODONT-501"
+                                   maxlength="20"
+                                   required>
+                            {% if errors.codigo is defined %}
+                            <div class="invalid-feedback">{{ errors.codigo|e }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label fw-semibold">Nome da Disciplina <span class="text-danger">*</span></label>
+                            <input type="text"
+                                   class="form-control {{ errors.nome is defined ? 'is-invalid' : '' }}"
+                                   name="nome"
+                                   value="{{ disciplina.nome|default('')|e }}"
+                                   placeholder="Ex: Clínica Integrada I"
+                                   maxlength="200"
+                                   required>
+                            {% if errors.nome is defined %}
+                            <div class="invalid-feedback">{{ errors.nome|e }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section mb-4">
+                    <h6 class="fw-bold text-primary mb-3">Tipo e Espaço</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+                            <select class="form-select {{ errors.tipo is defined ? 'is-invalid' : '' }}" name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="pratica_comum" {{ disciplina.tipo|default('') == 'pratica_comum' ? 'selected' : '' }}>
+                                    Prática Comum (com professor)
+                                </option>
+                                <option value="estagio" {{ disciplina.tipo|default('') == 'estagio' ? 'selected' : '' }}>
+                                    Estágio (com preceptor)
+                                </option>
+                            </select>
+                            {% if errors.tipo is defined %}
+                            <div class="invalid-feedback">{{ errors.tipo|e }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Espaço necessário <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-3 pt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="usa_clinica"
+                                           id="usa_clinica" value="1"
+                                           {{ disciplina.usa_clinica|default(0) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="usa_clinica">
+                                        <span class="badge bg-primary">Clínica</span>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="usa_laboratorio"
+                                           id="usa_laboratorio" value="1"
+                                           {{ disciplina.usa_laboratorio|default(0) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="usa_laboratorio">
+                                        <span class="badge bg-info text-dark">Laboratório</span>
+                                    </label>
+                                </div>
+                            </div>
+                            {% if errors.espaco is defined %}
+                            <div class="text-danger small mt-1">{{ errors.espaco|e }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Pode alternar semanas?</label>
+                            <div class="form-check form-switch pt-2">
+                                <input class="form-check-input" type="checkbox" name="permite_alternancia"
+                                       id="permite_alternancia" value="1"
+                                       {{ disciplina.permite_alternancia|default(0) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="permite_alternancia">
+                                    Sim (ocupa semanas alternadas)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section mb-4">
+                    <h6 class="fw-bold text-primary mb-3">Carga Horária e Encontros</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Carga horária prática (h) <span class="text-danger">*</span></label>
+                            <input type="number"
+                                   class="form-control {{ errors.carga_horaria_pratica is defined ? 'is-invalid' : '' }}"
+                                   name="carga_horaria_pratica"
+                                   value="{{ disciplina.carga_horaria_pratica|default('') }}"
+                                   min="1" max="400">
+                            {% if errors.carga_horaria_pratica is defined %}
+                            <div class="invalid-feedback">{{ errors.carga_horaria_pratica|e }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Mínimo de encontros <span class="text-danger">*</span></label>
+                            <input type="number"
+                                   class="form-control {{ errors.minimo_encontros is defined ? 'is-invalid' : '' }}"
+                                   name="minimo_encontros"
+                                   value="{{ disciplina.minimo_encontros|default('10') }}"
+                                   min="1" max="40">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Duração do encontro (min) <span class="text-danger">*</span></label>
+                            <input type="number"
+                                   class="form-control {{ errors.duracao_encontro_min is defined ? 'is-invalid' : '' }}"
+                                   name="duracao_encontro_min"
+                                   value="{{ disciplina.duracao_encontro_min|default('180') }}"
+                                   min="30" max="480" step="30">
+                            <div class="form-text">Ex: 180 = 3h, 240 = 4h</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Prioridade</label>
+                            <select class="form-select" name="prioridade">
+                                {% for p in 1..10 %}
+                                <option value="{{ p }}" {{ disciplina.prioridade|default(5) == p ? 'selected' : '' }}>
+                                    {{ p }} {{ p == 1 ? '(Máxima)' : (p == 10 ? '(Mínima)' : '') }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section mb-3">
+                    <h6 class="fw-bold text-primary mb-3">Período de Oferta no Semestre</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Semana inicial</label>
+                            <input type="number" class="form-control" name="semana_inicio"
+                                   value="{{ disciplina.semana_inicio|default('1') }}" min="1" max="20">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Semana final</label>
+                            <input type="number" class="form-control" name="semana_fim"
+                                   value="{{ disciplina.semana_fim|default('20') }}" min="1" max="20">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Observações</label>
+                            <input type="text" class="form-control" name="observacoes"
+                                   value="{{ disciplina.observacoes|default('')|e }}" maxlength="500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="/cadastros/disciplinas" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-2"></i>
+                {{ modo == 'criar' ? 'Criar Disciplina' : 'Salvar Alterações' }}
+            </button>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}

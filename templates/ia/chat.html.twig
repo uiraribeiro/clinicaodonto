@@ -1,0 +1,219 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Chat com IA{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Assistente de Planejamento</h1>
+        <small class="text-muted">Converse em português sobre a agenda do semestre</small>
+    </div>
+    {% if versao_id %}
+        <a href="/ia/sugestoes/{{ versao_id }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-lightbulb me-1"></i>Ver sugestões
+        </a>
+    {% endif %}
+</div>
+
+<div class="row g-3" x-data="chatIA()" x-init="init()">
+
+    {# ── Histórico de sessões ── #}
+    <div class="col-lg-3 d-none d-lg-block">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent py-2">
+                <span class="small fw-semibold">Conversas anteriores</span>
+                <a href="/ia/chat{% if versao_id %}?versao_id={{ versao_id }}{% endif %}"
+                   class="btn btn-sm btn-outline-primary float-end">
+                    <i class="bi bi-plus"></i>
+                </a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% if sessoes is empty %}
+                    <div class="list-group-item text-muted small py-3 text-center">Sem conversas anteriores.</div>
+                {% else %}
+                    {% for s in sessoes %}
+                    <a href="/ia/chat?sessao={{ s.sessao_id }}{% if versao_id %}&versao_id={{ versao_id }}{% endif %}"
+                       class="list-group-item list-group-item-action py-2 {% if sessao_id == s.sessao_id %}active{% endif %}">
+                        <div class="small text-truncate">{{ s.primeira_pergunta ?? 'Conversa' }}</div>
+                        <div class="text-muted" style="font-size:.7rem">{{ s.ultima_msg|date('d/m H:i') }} · {{ s.total_msgs }} msgs</div>
+                    </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Área de chat ── #}
+    <div class="col-lg-9">
+        <div class="card border-0 shadow-sm d-flex flex-column" style="height:72vh">
+
+            {# Histórico de mensagens #}
+            <div class="card-body overflow-auto flex-grow-1 p-3" id="chat-mensagens" x-ref="mensagens">
+                {% if historico is empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-robot fs-2 d-block mb-3 text-primary opacity-50"></i>
+                        <p class="mb-1">Olá! Sou o assistente de planejamento do Odonto Scheduler.</p>
+                        <p class="small">Posso ajudar com análise de conflitos, redistribuição de turmas e sugestões para otimizar a agenda.</p>
+                        {% if versao_id %}
+                            <p class="small text-info"><i class="bi bi-info-circle me-1"></i>Tenho acesso à versão #{{ versao_id }} da agenda.</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    {% for msg in historico %}
+                        <div class="d-flex {% if msg.role == 'user' %}justify-content-end{% endif %} mb-3">
+                            <div class="chat-bubble {% if msg.role == 'user' %}chat-bubble-user{% else %}chat-bubble-ia{% endif %}"
+                                 style="max-width:80%">
+                                {% if msg.role == 'assistant' %}
+                                    <div class="small text-muted mb-1"><i class="bi bi-robot me-1"></i>Assistente</div>
+                                {% endif %}
+                                <div class="small" style="white-space:pre-wrap">{{ msg.content|e }}</div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {# Mensagens adicionadas via Alpine.js #}
+                <template x-for="msg in mensagens" :key="msg.id">
+                    <div :class="msg.role === 'user' ? 'd-flex justify-content-end mb-3' : 'd-flex mb-3'">
+                        <div :class="msg.role === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-ia'"
+                             style="max-width:80%">
+                            <div x-show="msg.role === 'assistant'" class="small text-muted mb-1">
+                                <i class="bi bi-robot me-1"></i>Assistente
+                            </div>
+                            <div class="small" style="white-space:pre-wrap" x-text="msg.content"></div>
+                        </div>
+                    </div>
+                </template>
+
+                {# Indicador de digitação #}
+                <div x-show="digitando" class="d-flex mb-3">
+                    <div class="chat-bubble chat-bubble-ia">
+                        <span class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {# Input de mensagem #}
+            <div class="card-footer bg-transparent border-top p-3">
+                {% if not app_bedrock_enabled ?? true %}
+                    <div class="alert alert-warning py-2 mb-2 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Bedrock desabilitado (BEDROCK_ENABLED=false). Configure as credenciais AWS para usar o chat.
+                    </div>
+                {% endif %}
+                <form @submit.prevent="enviarMensagem" class="d-flex gap-2">
+                    <input type="hidden" name="sessao_id" x-model="sessaoId">
+                    <input type="hidden" name="versao_id" value="{{ versao_id ?? '' }}">
+                    <textarea
+                        x-model="inputMsg"
+                        @keydown.enter.exact.prevent="enviarMensagem"
+                        @keydown.enter.shift="/* nova linha */"
+                        class="form-control form-control-sm"
+                        placeholder="Digite sua pergunta... (Enter para enviar, Shift+Enter para nova linha)"
+                        rows="2"
+                        :disabled="digitando"
+                        style="resize:none"></textarea>
+                    <button type="submit" class="btn btn-primary align-self-end" :disabled="digitando || !inputMsg.trim()">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </form>
+                <div class="text-muted mt-1" style="font-size:.7rem">
+                    <i class="bi bi-shield-check me-1 text-success"></i>
+                    Sugestões da IA precisam de aprovação humana antes de serem aplicadas.
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function chatIA() {
+    return {
+        sessaoId:  '{{ sessao_id }}',
+        versaoId:  '{{ versao_id ?? "" }}',
+        inputMsg:  '',
+        mensagens: [],
+        digitando: false,
+        msgId:     0,
+
+        init() {
+            this.scrollBaixo();
+        },
+
+        async enviarMensagem() {
+            const texto = this.inputMsg.trim();
+            if (!texto || this.digitando) return;
+
+            this.mensagens.push({ id: ++this.msgId, role: 'user', content: texto });
+            this.inputMsg  = '';
+            this.digitando = true;
+            await this.$nextTick();
+            this.scrollBaixo();
+
+            try {
+                const res = await apiFetch('/ia/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        mensagem:  texto,
+                        sessao_id: this.sessaoId,
+                        versao_id: this.versaoId || null,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.erro) {
+                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro: ' + data.erro });
+                } else {
+                    if (data.sessao_id) this.sessaoId = data.sessao_id;
+                    this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: data.resposta });
+                }
+            } catch (e) {
+                this.mensagens.push({ id: ++this.msgId, role: 'assistant', content: '❌ Erro de comunicação: ' + e.message });
+            } finally {
+                this.digitando = false;
+                await this.$nextTick();
+                this.scrollBaixo();
+            }
+        },
+
+        scrollBaixo() {
+            const el = this.$refs.mensagens;
+            if (el) el.scrollTop = el.scrollHeight;
+        },
+    };
+}
+</script>
+
+<style>
+.chat-bubble {
+    padding: .6rem .9rem;
+    border-radius: 1rem;
+    line-height: 1.5;
+}
+.chat-bubble-user {
+    background: var(--bs-primary);
+    color: #fff;
+    border-bottom-right-radius: .2rem;
+}
+.chat-bubble-ia {
+    background: #f0f4ff;
+    border-bottom-left-radius: .2rem;
+}
+.typing-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #6c757d;
+    border-radius: 50%;
+    animation: bounce .9s infinite;
+    margin: 0 1px;
+}
+.typing-dots span:nth-child(2) { animation-delay: .15s; }
+.typing-dots span:nth-child(3) { animation-delay: .30s; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+</style>
+{% endblock %}

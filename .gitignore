@@ -1,0 +1,29 @@
+# Ambiente
+.env
+
+# Dependências
+/vendor/
+
+# Cache e gerados
+/storage/logs/*
+/storage/exports/*
+/storage/cache/*
+!storage/logs/.gitkeep
+!storage/exports/.gitkeep
+!storage/cache/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+composer.phar
+
+# Docker volumes locais
+/docker/mysql-data/

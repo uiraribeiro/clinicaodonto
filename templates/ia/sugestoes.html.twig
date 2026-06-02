@@ -1,0 +1,160 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Sugestões da IA — Versão #{{ versao_id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0"><i class="bi bi-robot me-2 text-primary"></i>Sugestões da IA</h1>
+        <small class="text-muted">Versão de agenda #{{ versao_id }} · {{ pendentes }} pendente(s)</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/ia/chat?versao_id={{ versao_id }}" class="btn btn-outline-primary">
+            <i class="bi bi-chat-dots me-1"></i> Chat com IA
+        </a>
+        <form action="/ia/sugestoes/solicitar" method="post" x-data="{ loading: false }" @submit="loading = true">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="versao_id"   value="{{ versao_id }}">
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+                <span x-show="!loading"><i class="bi bi-magic me-1"></i>Solicitar Novas Sugestões</span>
+                <span x-show="loading"><span class="spinner-border spinner-border-sm me-1"></span>Consultando IA...</span>
+            </button>
+        </form>
+        <a href="/agenda/versao/{{ versao_id }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+{# Aviso importante sobre aprovação humana #}
+<div class="alert alert-info d-flex gap-2 align-items-start mb-4">
+    <i class="bi bi-shield-check fs-5 flex-shrink-0 mt-1"></i>
+    <div>
+        <strong>Aprovação humana obrigatória.</strong>
+        Nenhuma sugestão é aplicada automaticamente. Ao aceitar uma sugestão, você recebe as instruções para aplicá-la manualmente na agenda.
+    </div>
+</div>
+
+{% if sugestoes is empty %}
+    <div class="card border-0 shadow-sm text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-lightbulb fs-1 text-muted d-block mb-3"></i>
+            <h5 class="text-muted">Nenhuma sugestão ainda</h5>
+            <p class="text-muted">Clique em <strong>Solicitar Novas Sugestões</strong> para que a IA analise os conflitos e proponha melhorias.</p>
+        </div>
+    </div>
+{% else %}
+    {# Tabs por status #}
+    <ul class="nav nav-tabs mb-3" x-data="{ aba: 'pendente' }">
+        <li class="nav-item">
+            <a class="nav-link" :class="aba === 'pendente' ? 'active' : ''" @click.prevent="aba = 'pendente'" href="#">
+                Pendentes
+                <span class="badge bg-warning text-dark ms-1">{{ sugestoes|filter(s => s.status == 'pendente')|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="aba === 'aceita' ? 'active' : ''" @click.prevent="aba = 'aceita'" href="#">
+                Aceitas
+                <span class="badge bg-success ms-1">{{ sugestoes|filter(s => s.status == 'aceita')|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="aba === 'rejeitada' ? 'active' : ''" @click.prevent="aba = 'rejeitada'" href="#">
+                Rejeitadas
+                <span class="badge bg-secondary ms-1">{{ sugestoes|filter(s => s.status == 'rejeitada')|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" :class="aba === 'invalida' ? 'active' : ''" @click.prevent="aba = 'invalida'" href="#">
+                Inválidas
+                <span class="badge bg-danger ms-1">{{ sugestoes|filter(s => s.status == 'invalida')|length }}</span>
+            </a>
+        </li>
+    </ul>
+
+    <div x-data="{ aba: 'pendente' }">
+        {% for status in ['pendente', 'aceita', 'rejeitada', 'invalida'] %}
+            <div x-show="aba === '{{ status }}'">
+                {% set lista = sugestoes|filter(s => s.status == status) %}
+                {% if lista is empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                        Nenhuma sugestão {{ status == 'pendente' ? 'pendente' : (status == 'aceita' ? 'aceita' : (status == 'rejeitada' ? 'rejeitada' : 'inválida')) }}.
+                    </div>
+                {% else %}
+                    <div class="d-flex flex-column gap-3">
+                    {% for s in lista %}
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge
+                                        {% if s.prioridade == 'critica' %}bg-danger
+                                        {% elseif s.prioridade == 'alta' %}bg-warning text-dark
+                                        {% elseif s.prioridade == 'media' %}bg-info text-dark
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ s.prioridade|capitalize }}
+                                    </span>
+                                    <code class="small text-muted">{{ s.tipo_sugestao|replace({'_': ' '}) }}</code>
+                                    {% if s.validada_pelo_sistema %}
+                                        <span class="badge bg-success-subtle text-success border border-success small">
+                                            <i class="bi bi-shield-check me-1"></i>Validada
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ s.created_at|date('d/m H:i') }}</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="text-muted small fw-semibold mb-1">PROBLEMA IDENTIFICADO</div>
+                                        <p class="small mb-0">{{ s.problema_identificado }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-muted small fw-semibold mb-1">SUGESTÃO</div>
+                                        <p class="small mb-0 fw-semibold">{{ s.sugestao }}</p>
+                                    </div>
+                                    {% if s.impacto_esperado %}
+                                    <div class="col-12">
+                                        <div class="text-muted small fw-semibold mb-1">IMPACTO ESPERADO</div>
+                                        <p class="small mb-0 text-success">{{ s.impacto_esperado }}</p>
+                                    </div>
+                                    {% endif %}
+                                    {% if s.status == 'invalida' and s.motivo_invalidade %}
+                                    <div class="col-12">
+                                        <div class="alert alert-danger py-2 mb-0 small">
+                                            <i class="bi bi-x-circle me-1"></i><strong>Motivo de invalidação:</strong> {{ s.motivo_invalidade }}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    {% if s.acao_por_nome %}
+                                    <div class="col-12 text-muted small">
+                                        <i class="bi bi-person me-1"></i>{{ s.status|capitalize }} por {{ s.acao_por_nome }} em {{ s.acao_em|date('d/m/Y H:i') }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if s.status == 'pendente' %}
+                            <div class="card-footer bg-transparent d-flex gap-2">
+                                <form action="/ia/sugestoes/{{ s.id }}/aceitar" method="post">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-lg me-1"></i>Aceitar
+                                    </button>
+                                </form>
+                                <form action="/ia/sugestoes/{{ s.id }}/rejeitar" method="post">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-x-lg me-1"></i>Rejeitar
+                                    </button>
+                                </form>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

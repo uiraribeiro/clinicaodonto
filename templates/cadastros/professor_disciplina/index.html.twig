@@ -1,0 +1,290 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Vínculo Professor × Disciplina — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Vínculo Professor × Disciplina</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ filtro: '', tipo: '' }">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold">
+                <i class="bi bi-link-45deg me-2 text-primary"></i>Vínculo Professor × Disciplina
+            </h4>
+            <small class="text-muted">{{ vinculos|length }} vínculo(s) cadastrado(s)</small>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <input type="text"
+                           class="form-control form-control-sm"
+                           placeholder="Buscar por professor ou disciplina..."
+                           x-model="filtro">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" x-model="tipo">
+                        <option value="">Todos os tipos</option>
+                        <option value="estagio">Estágio</option>
+                        <option value="pratica_comum">Prática</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-secondary" @click="filtro = ''; tipo = ''">
+                        <i class="bi bi-x-circle me-1"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de vínculos existentes — desktop -->
+    <div class="card border-0 shadow-sm mb-4 d-none d-md-block">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Professor / Preceptor</th>
+                        <th>Disciplina</th>
+                        <th class="text-center">Tipo</th>
+                        <th>Data início</th>
+                        <th>Data fim</th>
+                        <th>Observações</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for v in vinculos %}
+                <tr x-show="
+                    (filtro === '' || '{{ v.professor_nome|lower|e }}'.includes(filtro.toLowerCase()) || '{{ v.disciplina_nome|lower|e }}'.includes(filtro.toLowerCase()))
+                    && (tipo === '' || tipo === '{{ v.tipo|e }}')
+                ">
+                    <td>
+                        <div class="fw-semibold">{{ v.professor_nome|e }}</div>
+                        <small class="text-muted">
+                            {% if v.tipo == 'estagio' %}
+                            <i class="bi bi-person-check text-success me-1"></i>Preceptor
+                            {% else %}
+                            <i class="bi bi-person-badge text-primary me-1"></i>Professor
+                            {% endif %}
+                        </small>
+                    </td>
+                    <td>
+                        <a href="/cadastros/disciplinas/{{ v.disciplina_id }}" class="text-decoration-none">
+                            {{ v.disciplina_nome|e }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {{ v.tipo == 'estagio' ? 'bg-success' : 'bg-primary' }}">
+                            {{ v.tipo == 'estagio' ? 'Estágio' : 'Prática' }}
+                        </span>
+                    </td>
+                    <td class="text-nowrap">
+                        {% if v.data_inicio is defined and v.data_inicio %}
+                        {{ v.data_inicio|date('d/m/Y') }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        {% if v.data_fim is defined and v.data_fim %}
+                        {{ v.data_fim|date('d/m/Y') }}
+                        {% else %}
+                        <span class="badge bg-light text-dark border">Em aberto</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ v.observacoes|default('—')|e }}</td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <form action="/cadastros/professor_disciplina/{{ v.id }}/excluir" method="POST" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit"
+                                        class="btn btn-outline-danger"
+                                        title="Remover vínculo"
+                                        data-confirm="Remover o vínculo entre {{ v.professor_nome|e }} e {{ v.disciplina_nome|e }}?">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <i class="bi bi-link fs-2 d-block mb-2"></i>
+                        Nenhum vínculo cadastrado. Use o formulário abaixo para criar o primeiro.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Cards mobile de vínculos -->
+    <div class="d-md-none mb-4">
+        {% for v in vinculos %}
+        <div class="card border-0 shadow-sm mb-2"
+             x-show="
+                (filtro === '' || '{{ v.professor_nome|lower|e }}'.includes(filtro.toLowerCase()) || '{{ v.disciplina_nome|lower|e }}'.includes(filtro.toLowerCase()))
+                && (tipo === '' || tipo === '{{ v.tipo|e }}')
+             ">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <div>
+                        <div class="fw-semibold">{{ v.professor_nome|e }}</div>
+                        <div class="text-muted small">{{ v.disciplina_nome|e }}</div>
+                    </div>
+                    <span class="badge {{ v.tipo == 'estagio' ? 'bg-success' : 'bg-primary' }}">
+                        {{ v.tipo == 'estagio' ? 'Estágio' : 'Prática' }}
+                    </span>
+                </div>
+                {% if v.data_inicio is defined and v.data_inicio %}
+                <div class="text-muted small mb-2">
+                    {{ v.data_inicio|date('d/m/Y') }}
+                    {% if v.data_fim is defined and v.data_fim %}
+                    &rarr; {{ v.data_fim|date('d/m/Y') }}
+                    {% else %}
+                    &rarr; <span class="badge bg-light text-dark border">Em aberto</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if v.observacoes is defined and v.observacoes %}
+                <div class="text-muted small fst-italic mb-2">{{ v.observacoes|e }}</div>
+                {% endif %}
+                <form action="/cadastros/professor_disciplina/{{ v.id }}/excluir" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                    <button type="submit"
+                            class="btn btn-sm btn-outline-danger w-100"
+                            data-confirm="Remover o vínculo entre {{ v.professor_nome|e }} e {{ v.disciplina_nome|e }}?">
+                        <i class="bi bi-trash me-1"></i>Remover vínculo
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-link fs-2 d-block mb-2"></i>
+            Nenhum vínculo cadastrado.
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulário inline de criação -->
+    <div class="card border-0 shadow-sm border-start border-primary border-3">
+        <div class="card-header bg-transparent fw-semibold">
+            <i class="bi bi-plus-circle me-2 text-primary"></i>Novo Vínculo
+        </div>
+        <div class="card-body">
+            <form action="/cadastros/professor_disciplina" method="POST" novalidate>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            Professor / Preceptor <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select {{ errors.professor_id is defined ? 'is-invalid' : '' }}"
+                                name="professor_id"
+                                required>
+                            <option value="">Selecione...</option>
+                            {% if professores is defined and professores %}
+                                <optgroup label="Professores">
+                                    {% for prof in professores %}
+                                    <option value="{{ prof.id }}"
+                                            {{ (form_data.professor_id is defined and form_data.professor_id == prof.id) ? 'selected' : '' }}>
+                                        {{ prof.nome|e }}
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endif %}
+                            {% if preceptores is defined and preceptores %}
+                                <optgroup label="Preceptores">
+                                    {% for prec in preceptores %}
+                                    <option value="{{ prec.id }}"
+                                            {{ (form_data.professor_id is defined and form_data.professor_id == prec.id) ? 'selected' : '' }}>
+                                        {{ prec.nome|e }}
+                                    </option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endif %}
+                        </select>
+                        {% if errors.professor_id is defined %}
+                        <div class="invalid-feedback">{{ errors.professor_id|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            Disciplina <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select {{ errors.disciplina_id is defined ? 'is-invalid' : '' }}"
+                                name="disciplina_id"
+                                required>
+                            <option value="">Selecione...</option>
+                            {% if disciplinas is defined %}
+                                {% for disc in disciplinas %}
+                                <option value="{{ disc.id }}"
+                                        {{ (form_data.disciplina_id is defined and form_data.disciplina_id == disc.id) ? 'selected' : '' }}>
+                                    {{ disc.nome|e }}
+                                    {% if disc.tipo == 'estagio' %}(Estágio){% endif %}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        {% if errors.disciplina_id is defined %}
+                        <div class="invalid-feedback">{{ errors.disciplina_id|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">
+                            Data início <span class="text-danger">*</span>
+                        </label>
+                        <input type="date"
+                               class="form-control {{ errors.data_inicio is defined ? 'is-invalid' : '' }}"
+                               name="data_inicio"
+                               value="{{ form_data.data_inicio|default('')|e }}"
+                               required>
+                        {% if errors.data_inicio is defined %}
+                        <div class="invalid-feedback">{{ errors.data_inicio|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label fw-semibold">Data fim</label>
+                        <input type="date"
+                               class="form-control"
+                               name="data_fim"
+                               value="{{ form_data.data_fim|default('')|e }}">
+                        <div class="form-text">Deixe em branco para vínculo em aberto.</div>
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-link-45deg me-2"></i>Vincular
+                        </button>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Observações</label>
+                        <textarea class="form-control"
+                                  name="observacoes"
+                                  rows="2"
+                                  maxlength="500"
+                                  placeholder="Informações adicionais sobre este vínculo (opcional)...">{{ form_data.observacoes|default('')|e }}</textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

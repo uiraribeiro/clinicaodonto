@@ -1,0 +1,97 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Relatório por Turma — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="/relatorios">Relatórios</a></li>
+<li class="breadcrumb-item active">Por Turma</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-people me-2 text-success"></i>Carga por Turma</h4>
+        <small class="text-muted">Versão #{{ versao.numero_versao }} · {{ versao.semestre_ref }} · {{ resumo|length }} combinações</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/relatorios/exportar/turma/pdf" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-filetype-pdf me-1"></i>PDF
+        </a>
+        <a href="/relatorios/exportar/turma/xlsx" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
+        <a href="/relatorios/exportar/turma/csv" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-filetype-csv me-1"></i>CSV
+        </a>
+        <a href="/relatorios" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+{% if resumo is empty %}
+    <div class="card border-0 shadow-sm text-center py-5">
+        <div class="card-body text-muted">
+            <i class="bi bi-people fs-1 d-block mb-3"></i>
+            Nenhuma turma encontrada para a versão ativa.
+        </div>
+    </div>
+{% else %}
+    {% for turma_nome, disciplinas in por_turma %}
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center py-2">
+            <div>
+                <strong>{{ turma_nome }}</strong>
+                {% set primeiro = disciplinas[0] %}
+                <span class="badge bg-light text-dark border ms-2">{{ primeiro.curso_sigla }}</span>
+                <span class="badge bg-light text-dark border ms-1">{{ primeiro.periodo }}º período</span>
+                <span class="text-muted small ms-2"><i class="bi bi-people me-1"></i>{{ primeiro.numero_alunos }} alunos</span>
+            </div>
+            <div class="small text-muted">{{ disciplinas|length }} disciplina(s)</div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Disciplina</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Mín Enc.</th>
+                        <th class="text-center">Alocados</th>
+                        <th style="min-width:120px">Progresso</th>
+                        <th class="text-end">Horas</th>
+                        <th class="text-center">Clínica</th>
+                        <th class="text-center">Lab</th>
+                        <th>Professor</th>
+                        <th>Preceptor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for d in disciplinas %}
+                    {% set pct = d.minimo_encontros > 0 ? (d.encontros_alocados / d.minimo_encontros * 100)|round : 0 %}
+                    {% set pct_clamped = pct > 100 ? 100 : pct %}
+                    {% set cor = pct >= 100 ? 'success' : (pct >= 60 ? 'warning' : 'danger') %}
+                    <tr>
+                        <td><strong>{{ d.disciplina_nome }}</strong></td>
+                        <td><span class="badge bg-secondary-subtle text-secondary border">{{ d.disciplina_tipo }}</span></td>
+                        <td class="text-center">{{ d.minimo_encontros }}</td>
+                        <td class="text-center fw-bold text-{{ cor }}">{{ d.encontros_alocados }}</td>
+                        <td>
+                            <div class="progress" style="height:6px">
+                                <div class="progress-bar bg-{{ cor }}" style="width:{{ pct_clamped }}%"></div>
+                            </div>
+                            <div class="text-{{ cor }} small" style="font-size:.7rem">{{ pct }}%</div>
+                        </td>
+                        <td class="text-end">{{ d.horas_alocadas|number_format(1) }}h</td>
+                        <td class="text-center">{{ d.enc_clinica }}</td>
+                        <td class="text-center">{{ d.enc_lab }}</td>
+                        <td class="small">{{ d.professor_nome ?? '—' }}</td>
+                        <td class="small">{{ d.preceptor_nome ?? '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}

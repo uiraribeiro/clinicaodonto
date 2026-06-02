@@ -1,0 +1,130 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ modo == 'criar' ? 'Novo Semestre' : 'Editar Semestre' }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/semestres">Semestres</a></li>
+<li class="breadcrumb-item active">{{ modo == 'criar' ? 'Novo' : 'Editar' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-lg-7">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-calendar-range me-2 text-primary"></i>
+            {{ modo == 'criar' ? 'Novo Semestre' : 'Editar: ' ~ semestre.referencia|default('')|e }}
+        </h4>
+        <a href="/cadastros/semestres" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    {% if errors is defined and errors %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Corrija os erros abaixo antes de continuar:</strong>
+        <ul class="mb-0 mt-2">
+            {% for field, msg in errors %}
+            <li>{{ msg|e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form action="{{ modo == 'criar' ? '/cadastros/semestres' : '/cadastros/semestres/' ~ semestre.id }}"
+          method="POST"
+          novalidate
+          x-data="{
+              referencia: '{{ semestre.referencia|default('')|e }}',
+              dataInicio: '{{ semestre.data_inicio|default('')|e }}',
+              semanas: {{ semestre.numero_semanas|default(20) }}
+          }">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Referência <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control {{ errors.referencia is defined ? 'is-invalid' : '' }}"
+                               name="referencia"
+                               x-model="referencia"
+                               value="{{ semestre.referencia|default('')|e }}"
+                               placeholder="2026.1"
+                               pattern="\d{4}\.[12]"
+                               maxlength="6"
+                               required>
+                        <div class="form-text">Formato: AAAA.1 ou AAAA.2</div>
+                        {% if errors.referencia is defined %}
+                        <div class="invalid-feedback">{{ errors.referencia|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Data de Início <span class="text-danger">*</span></label>
+                        <input type="date"
+                               class="form-control {{ errors.data_inicio is defined ? 'is-invalid' : '' }}"
+                               name="data_inicio"
+                               x-model="dataInicio"
+                               value="{{ semestre.data_inicio|default('')|e }}"
+                               required>
+                        {% if errors.data_inicio is defined %}
+                        <div class="invalid-feedback">{{ errors.data_inicio|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Data de Fim <span class="text-danger">*</span></label>
+                        <input type="date"
+                               class="form-control {{ errors.data_fim is defined ? 'is-invalid' : '' }}"
+                               name="data_fim"
+                               value="{{ semestre.data_fim|default('')|e }}"
+                               required>
+                        {% if errors.data_fim is defined %}
+                        <div class="invalid-feedback">{{ errors.data_fim|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Número de Semanas <span class="text-danger">*</span></label>
+                        <input type="number"
+                               class="form-control {{ errors.numero_semanas is defined ? 'is-invalid' : '' }}"
+                               name="numero_semanas"
+                               x-model.number="semanas"
+                               value="{{ semestre.numero_semanas|default(20) }}"
+                               min="15" max="25" required>
+                        <div class="form-text">Recomendado: 20 semanas</div>
+                        {% if errors.numero_semanas is defined %}
+                        <div class="invalid-feedback">{{ errors.numero_semanas|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-8 d-flex align-items-end">
+                        <div class="alert alert-info mb-0 py-2 w-100 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <strong>Atenção:</strong> As <span x-text="semanas"></span> semanas serão geradas
+                            automaticamente com base na data de início ao salvar.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="/cadastros/semestres" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-2"></i>
+                {{ modo == 'criar' ? 'Criar Semestre' : 'Salvar Alterações' }}
+            </button>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}

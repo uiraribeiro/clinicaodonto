@@ -1,0 +1,158 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Agenda Semestral{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Agenda Semestral</h1>
+        {% if semestreAtivo %}
+            <small class="text-muted">Semestre ativo: <strong>{{ semestreAtivo.referencia }}</strong></small>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/agenda/simulacao" class="btn btn-outline-secondary">
+            <i class="bi bi-play-circle"></i> Simulações
+        </a>
+        {% if semestreAtivo %}
+            <a href="/agenda/gerar" class="btn btn-primary">
+                <i class="bi bi-lightning-fill"></i> Gerar Agenda
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if not semestreAtivo %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Nenhum semestre ativo encontrado.
+        <a href="/cadastros/semestres" class="alert-link">Cadastre ou ative um semestre</a> para começar.
+    </div>
+{% elseif versoes is empty %}
+    <div class="card border-0 shadow-sm text-center py-5">
+        <div class="card-body">
+            <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
+            <h5 class="text-muted">Nenhuma versão de agenda gerada ainda</h5>
+            <p class="text-muted mb-4">Clique em <strong>Gerar Agenda</strong> para criar a primeira versão do semestre {{ semestreAtivo.referencia }}.</p>
+            <a href="/agenda/gerar" class="btn btn-primary">
+                <i class="bi bi-lightning-fill me-1"></i> Gerar Agenda Agora
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="row g-3 mb-4">
+        {% set publicada = versoes|filter(v => v.status == 'publicada')|first %}
+        {% if publicada %}
+            <div class="col-md-4">
+                <div class="card border-success shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-success">Publicada</span>
+                            <span class="text-muted small">v{{ publicada.numero_versao }}</span>
+                        </div>
+                        <div class="fs-4 fw-bold">{{ publicada.score_ocupacao ?? '—' }}%</div>
+                        <div class="text-muted small">Taxa de alocação</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-muted small mb-1">Conflitos na versão publicada</div>
+                        <div class="fs-4 fw-bold {% if publicada.total_conflitos > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ publicada.total_conflitos }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">Total de versões</div>
+                    <div class="fs-4 fw-bold">{{ versoes|length }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Versões do semestre {{ semestreAtivo.referencia }}</h6>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Versão</th>
+                        <th>Status</th>
+                        <th>Taxa alocação</th>
+                        <th>Conflitos</th>
+                        <th>Descrição</th>
+                        <th>Gerado por</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for v in versoes %}
+                    <tr>
+                        <td><strong>v{{ v.numero_versao }}</strong></td>
+                        <td>
+                            {% if v.status == 'publicada' %}
+                                <span class="badge bg-success">Publicada</span>
+                            {% elseif v.status == 'rascunho' %}
+                                <span class="badge bg-secondary">Rascunho</span>
+                            {% elseif v.status == 'simulacao' %}
+                                <span class="badge bg-info text-dark">Simulação</span>
+                            {% else %}
+                                <span class="badge bg-dark">Arquivada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if v.score_ocupacao is not null %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:6px;min-width:60px">
+                                        <div class="progress-bar {% if v.score_ocupacao >= 80 %}bg-success{% elseif v.score_ocupacao >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             style="width:{{ v.score_ocupacao }}%"></div>
+                                    </div>
+                                    <span class="small">{{ v.score_ocupacao }}%</span>
+                                </div>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if v.total_conflitos > 0 %}
+                                <span class="text-danger fw-semibold">{{ v.total_conflitos }}</span>
+                            {% else %}
+                                <span class="text-success">0</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ v.descricao }}</td>
+                        <td class="text-muted small">{{ v.criado_por_nome ?? '—' }}</td>
+                        <td class="text-muted small">{{ v.created_at|date('d/m/Y H:i') }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="/agenda/versao/{{ v.id }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if v.status == 'rascunho' %}
+                                    <form action="/agenda/publicar/{{ v.id }}" method="post" class="d-inline">
+                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                data-confirm="Publicar versão v{{ v.numero_versao }} como agenda oficial?">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

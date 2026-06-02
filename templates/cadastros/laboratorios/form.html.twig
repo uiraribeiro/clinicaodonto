@@ -1,0 +1,162 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Editar Laboratório — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item"><a href="/cadastros/laboratorio">Laboratório</a></li>
+<li class="breadcrumb-item active">Editar</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-12 col-xl-9">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">
+            <i class="bi bi-mortarboard me-2 text-primary"></i>Editar Laboratório
+        </h4>
+        <a href="/cadastros/laboratorio" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Voltar
+        </a>
+    </div>
+
+    {% if errors is defined and errors %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Corrija os erros abaixo antes de continuar:</strong>
+        <ul class="mb-0 mt-2">
+            {% for field, msg in errors %}
+            <li>{{ msg|e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form action="/cadastros/laboratorios/{{ laboratorio.id }}"
+          method="POST"
+          novalidate
+          x-data="{
+              assentos: {{ laboratorio.quantidade_assentos|default(30) }}
+          }">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+
+        <!-- Identificação -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary mb-3">Identificação</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                        <input type="text"
+                               class="form-control {{ errors.nome is defined ? 'is-invalid' : '' }}"
+                               name="nome"
+                               value="{{ laboratorio.nome|default('')|e }}"
+                               maxlength="200"
+                               required>
+                        {% if errors.nome is defined %}
+                        <div class="invalid-feedback">{{ errors.nome|e }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capacidade -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary mb-3">Capacidade</h6>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">Quantidade de Assentos <span class="text-danger">*</span></label>
+                        <input type="number"
+                               class="form-control {{ errors.quantidade_assentos is defined ? 'is-invalid' : '' }}"
+                               name="quantidade_assentos"
+                               x-model.number="assentos"
+                               min="1" max="200" required>
+                        {% if errors.quantidade_assentos is defined %}
+                        <div class="invalid-feedback">{{ errors.quantidade_assentos|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-7 d-flex align-items-end">
+                        <div class="alert alert-info mb-0 py-2 w-100 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Capacidade atual: <strong x-text="assentos + ' assentos'"></strong>.
+                            Recomendado: 30 para turmas completas.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Horários -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary mb-3">Horários de Funcionamento</h6>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-muted small text-uppercase">Segunda a Sexta</label>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Abertura <span class="text-danger">*</span></label>
+                        <input type="time"
+                               class="form-control {{ errors.hora_abertura is defined ? 'is-invalid' : '' }}"
+                               name="hora_abertura"
+                               value="{{ laboratorio.hora_abertura|default('07:00') }}"
+                               required>
+                        {% if errors.hora_abertura is defined %}
+                        <div class="invalid-feedback">{{ errors.hora_abertura|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Fechamento <span class="text-danger">*</span></label>
+                        <input type="time"
+                               class="form-control {{ errors.hora_fechamento is defined ? 'is-invalid' : '' }}"
+                               name="hora_fechamento"
+                               value="{{ laboratorio.hora_fechamento|default('22:00') }}"
+                               required>
+                        {% if errors.hora_fechamento is defined %}
+                        <div class="invalid-feedback">{{ errors.hora_fechamento|e }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-muted small text-uppercase mt-2">Sábado</label>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Abertura (Sáb)</label>
+                        <input type="time"
+                               class="form-control"
+                               name="hora_abertura_sabado"
+                               value="{{ laboratorio.hora_abertura_sabado|default('07:00') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Fechamento (Sáb)</label>
+                        <input type="time"
+                               class="form-control"
+                               name="hora_fechamento_sabado"
+                               value="{{ laboratorio.hora_fechamento_sabado|default('12:00') }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <h6 class="fw-bold text-primary mb-3">Observações</h6>
+                <textarea class="form-control" name="observacoes" rows="3" maxlength="1000"
+                          placeholder="Informações adicionais sobre o laboratório...">{{ laboratorio.observacoes|default('')|e }}</textarea>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end">
+            <a href="/cadastros/laboratorio" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-2"></i>Salvar Alterações
+            </button>
+        </div>
+    </form>
+
+</div>
+</div>
+{% endblock %}

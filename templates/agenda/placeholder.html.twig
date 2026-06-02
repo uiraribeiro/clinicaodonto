@@ -1,0 +1,14 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}{{ titulo }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">{{ titulo }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  <i class="bi bi-gear-fill me-2"></i>
+  <strong>{{ titulo }}</strong> — Esta funcionalidade será implementada na Fase 3 (Motor de Otimização).
+</div>
+{% endblock %}

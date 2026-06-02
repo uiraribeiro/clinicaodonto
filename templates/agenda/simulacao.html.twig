@@ -1,0 +1,129 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Simulações de Agenda{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Simulações</h1>
+        <small class="text-muted">Teste a otimização sem afetar a agenda publicada.</small>
+    </div>
+    <a href="/agenda" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0"><i class="bi bi-play-circle me-2"></i>Nova Simulação</h6>
+            </div>
+            <div class="card-body">
+                {% if not semestreAtivo %}
+                    <div class="alert alert-warning mb-0">
+                        Nenhum semestre ativo. <a href="/cadastros/semestres">Ative um semestre</a> para simular.
+                    </div>
+                {% else %}
+                    <form action="/agenda/simulacao/rodar" method="post" x-data="{ loading: false }" @submit="loading = true">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="semestre_id" value="{{ semestreAtivo.id }}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Semestre</label>
+                            <input type="text" class="form-control" value="{{ semestreAtivo.referencia }}" readonly>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="descricao" class="form-label fw-semibold">Descrição</label>
+                            <input type="text" name="descricao" id="descricao" class="form-control"
+                                   placeholder="Ex: Teste com Prof. X disponível só às terças">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-info" :disabled="loading">
+                                <span x-show="!loading"><i class="bi bi-play-circle me-2"></i>Executar Simulação</span>
+                                <span x-show="loading"><span class="spinner-border spinner-border-sm me-2"></span>Simulando...</span>
+                            </button>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body small text-muted">
+                <i class="bi bi-shield-check me-2"></i>
+                Simulações ficam isoladas com status <strong>simulação</strong> e não afetam a agenda publicada.
+                Você pode descartá-las a qualquer momento.
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent">
+                <h6 class="mb-0">Simulações existentes</h6>
+            </div>
+            {% if simulacoes is empty %}
+                <div class="card-body text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                    Nenhuma simulação criada ainda.
+                </div>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Versão</th>
+                                <th>Taxa</th>
+                                <th>Conflitos</th>
+                                <th>Descrição</th>
+                                <th>Data</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for s in simulacoes %}
+                            <tr>
+                                <td><strong>v{{ s.numero_versao }}</strong></td>
+                                <td>
+                                    {% if s.score_ocupacao is not null %}
+                                        <span class="{% if s.score_ocupacao >= 80 %}text-success{% elseif s.score_ocupacao >= 50 %}text-warning{% else %}text-danger{% endif %} fw-semibold">
+                                            {{ s.score_ocupacao }}%
+                                        </span>
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="{% if s.total_conflitos > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ s.total_conflitos }}
+                                    </span>
+                                </td>
+                                <td class="text-muted small">{{ s.descricao }}</td>
+                                <td class="text-muted small">{{ s.created_at|date('d/m H:i') }}</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="/agenda/versao/{{ s.id }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <form action="/agenda/simulacao/{{ s.id }}/descartar" method="post">
+                                            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    data-confirm="Descartar esta simulação?">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

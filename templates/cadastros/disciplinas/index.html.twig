@@ -1,0 +1,141 @@
+{% extends "layout/base.html.twig" %}
+
+{% block title %}Disciplinas — {{ app_name }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item">Cadastros</li>
+<li class="breadcrumb-item active">Disciplinas</li>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ filtro: '', tipo: '' }">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-book me-2 text-primary"></i>Disciplinas</h4>
+            <small class="text-muted">{{ disciplinas|length }} disciplina(s) cadastrada(s)</small>
+        </div>
+        <a href="/cadastros/disciplinas/nova" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-2"></i>Nova Disciplina
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <input type="text"
+                           class="form-control form-control-sm"
+                           placeholder="Buscar por nome ou código..."
+                           x-model="filtro">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select form-select-sm" x-model="tipo">
+                        <option value="">Todos os tipos</option>
+                        <option value="pratica_comum">Prática Comum</option>
+                        <option value="estagio">Estágio</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-sm btn-outline-secondary" @click="filtro = ''; tipo = ''">
+                        <i class="bi bi-x-circle me-1"></i>Limpar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código</th>
+                        <th>Nome</th>
+                        <th>Tipo</th>
+                        <th>Espaço</th>
+                        <th class="text-center">Carga (h)</th>
+                        <th class="text-center">Prioridade</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for d in disciplinas %}
+                <tr x-show="
+                    (filtro === '' || '{{ d.nome|lower|e }}'.includes(filtro.toLowerCase()) || '{{ d.codigo|lower|e }}'.includes(filtro.toLowerCase()))
+                    && (tipo === '' || tipo === '{{ d.tipo }}')
+                ">
+                    <td class="fw-mono">
+                        <code>{{ d.codigo|e }}</code>
+                    </td>
+                    <td>
+                        <a href="/cadastros/disciplinas/{{ d.id }}" class="text-decoration-none fw-semibold">
+                            {{ d.nome|e }}
+                        </a>
+                        {% if d.permite_alternancia %}
+                        <span class="badge bg-info text-dark ms-1 small">Alternada</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {{ d.tipo == 'estagio' ? 'bg-success' : 'bg-purple' }}">
+                            {{ d.tipo == 'estagio' ? 'Estágio' : 'Prática' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if d.usa_clinica %}
+                        <span class="badge bg-primary me-1">Clínica</span>
+                        {% endif %}
+                        {% if d.usa_laboratorio %}
+                        <span class="badge bg-info text-dark">Lab</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ d.carga_horaria_pratica }}h</td>
+                    <td class="text-center">
+                        <span class="badge {{ d.prioridade <= 3 ? 'bg-danger' : (d.prioridade <= 6 ? 'bg-warning text-dark' : 'bg-secondary') }}">
+                            {{ d.prioridade }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge {{ d.ativo ? 'bg-success' : 'bg-secondary' }}">
+                            {{ d.ativo ? 'Ativa' : 'Inativa' }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/cadastros/disciplinas/{{ d.id }}" class="btn btn-outline-secondary" title="Ver">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="/cadastros/disciplinas/{{ d.id }}/editar" class="btn btn-outline-primary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form action="/cadastros/disciplinas/{{ d.id }}/excluir" method="POST" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit"
+                                        class="btn btn-outline-danger"
+                                        title="Desativar"
+                                        data-confirm="Desativar a disciplina {{ d.nome|e }}?">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        Nenhuma disciplina cadastrada.
+                        <a href="/cadastros/disciplinas/nova" class="d-block mt-2">Criar a primeira</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
