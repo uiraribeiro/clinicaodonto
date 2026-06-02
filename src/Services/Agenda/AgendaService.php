@@ -202,10 +202,14 @@ final class AgendaService
         $agStmt->execute([$versaoId, $semana]);
         $agendamentos = $agStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Agrupa por dia da semana
-        $porDia = [];
+        // Agrupa por dia da semana e por turno
+        $porDia     = [];
+        $porDiaTurno = [];
         foreach ($agendamentos as $ag) {
-            $porDia[(int)$ag['dia_semana']][] = $ag;
+            $dia   = (int)$ag['dia_semana'];
+            $turno = $this->turnoDeHora($ag['hora_inicio']);
+            $porDia[$dia][]          = $ag;
+            $porDiaTurno[$dia][$turno][] = $ag;
         }
 
         // Pares turma+disciplina sem agendamento nesta semana
@@ -248,18 +252,32 @@ final class AgendaService
         )->fetchAll(PDO::FETCH_ASSOC);
 
         return [
-            'versao'      => $versaoData,
-            'semana'      => $semanaData,
-            'semanas'     => $semanas,
-            'por_dia'     => $porDia,
-            'pendentes'   => $pendentes,
-            'professores' => $professores,
-            'preceptores' => $preceptores,
-            'clinicas'    => $clinicas,
-            'laboratorios'=> $laboratorios,
+            'versao'        => $versaoData,
+            'semana'        => $semanaData,
+            'semanas'       => $semanas,
+            'por_dia'       => $porDia,
+            'por_dia_turno' => $porDiaTurno,
+            'pendentes'     => $pendentes,
+            'professores'   => $professores,
+            'preceptores'   => $preceptores,
+            'clinicas'      => $clinicas,
+            'laboratorios'  => $laboratorios,
             'total_agendados' => count($agendamentos),
             'total_pendentes' => count($pendentes),
         ];
+    }
+
+    /** Determina o turno a partir da hora de início (string HH:MM:SS ou HH:MM). */
+    private function turnoDeHora(string $hora): string
+    {
+        $h = (int)substr($hora, 0, 2);
+        if ($h < 13) {
+            return 'manha';
+        }
+        if ($h < 19) {
+            return 'tarde';
+        }
+        return 'noturno';
     }
 
     /**
@@ -379,7 +397,9 @@ final class AgendaService
                 d.permite_alternancia,
                 td.professor_id,
                 td.preceptor_id,
-                td.semestre_ref
+                td.semestre_ref,
+                COALESCE(td.turno, t.turno, "manha")                              AS turno,
+                COALESCE(td.dia_semana_preferencial, t.dia_semana_preferencial)    AS dia_semana_preferencial
              FROM turma_disciplina td
              JOIN turmas t       ON t.id = td.turma_id      AND t.ativo = 1
              JOIN disciplinas d  ON d.id = td.disciplina_id AND d.ativo = 1
@@ -390,24 +410,26 @@ final class AgendaService
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return array_map(fn(array $r) => new TurmaDisciplinaPair(
-            turmaDiscId:       (int)$r['turma_disc_id'],
-            turmaId:           (int)$r['turma_id'],
-            turmaNome:         $r['turma_nome'],
-            numAlunos:         (int)$r['num_alunos'],
-            disciplinaId:      (int)$r['disciplina_id'],
-            disciplinaNome:    $r['disciplina_nome'],
-            disciplinaTipo:    $r['disciplina_tipo'],
-            usaClinica:        (bool)$r['usa_clinica'],
-            usaLaboratorio:    (bool)$r['usa_laboratorio'],
-            minimoEncontros:   (int)$r['minimo_encontros'],
-            duracaoEncontroMin:(int)$r['duracao_encontro_min'],
-            semanaInicio:      (int)$r['semana_inicio'],
-            semanaFim:         (int)$r['semana_fim'],
-            prioridade:        (int)$r['prioridade'],
-            permiteAlternancia:(bool)$r['permite_alternancia'],
-            professorId:       $r['professor_id'] ? (int)$r['professor_id'] : null,
-            preceptorId:       $r['preceptor_id'] ? (int)$r['preceptor_id'] : null,
-            semestreRef:       $r['semestre_ref'],
+            turmaDiscId:           (int)$r['turma_disc_id'],
+            turmaId:               (int)$r['turma_id'],
+            turmaNome:             $r['turma_nome'],
+            numAlunos:             (int)$r['num_alunos'],
+            disciplinaId:          (int)$r['disciplina_id'],
+            disciplinaNome:        $r['disciplina_nome'],
+            disciplinaTipo:        $r['disciplina_tipo'],
+            usaClinica:            (bool)$r['usa_clinica'],
+            usaLaboratorio:        (bool)$r['usa_laboratorio'],
+            minimoEncontros:       (int)$r['minimo_encontros'],
+            duracaoEncontroMin:    (int)$r['duracao_encontro_min'],
+            semanaInicio:          (int)$r['semana_inicio'],
+            semanaFim:             (int)$r['semana_fim'],
+            prioridade:            (int)$r['prioridade'],
+            permiteAlternancia:    (bool)$r['permite_alternancia'],
+            professorId:           $r['professor_id'] ? (int)$r['professor_id'] : null,
+            preceptorId:           $r['preceptor_id'] ? (int)$r['preceptor_id'] : null,
+            semestreRef:           $r['semestre_ref'],
+            turno:                 $r['turno'] ?? 'manha',
+            diaSemanaPreferencial: $r['dia_semana_preferencial'] ? (int)$r['dia_semana_preferencial'] : null,
         ), $rows);
     }
 

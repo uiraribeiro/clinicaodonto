@@ -105,21 +105,23 @@ class TurmaRepository
     {
         $stmt = $this->pdo->prepare('
             INSERT INTO turmas
-                (curso_id, nome, periodo, numero_alunos, restricoes,
+                (curso_id, nome, periodo, numero_alunos, turno, dia_semana_preferencial, restricoes,
                  ativo, created_by, updated_by)
             VALUES
-                (:curso_id, :nome, :periodo, :numero_alunos, :restricoes,
+                (:curso_id, :nome, :periodo, :numero_alunos, :turno, :dia_semana_preferencial, :restricoes,
                  1, :created_by, :updated_by)
         ');
 
         $stmt->execute([
-            ':curso_id'      => (int) $data['curso_id'],
-            ':nome'          => trim($data['nome']),
-            ':periodo'       => (int) $data['periodo'],
-            ':numero_alunos' => (int) $data['numero_alunos'],
-            ':restricoes'    => !empty($data['restricoes']) ? json_encode($data['restricoes']) : null,
-            ':created_by'    => $usuarioId,
-            ':updated_by'    => $usuarioId,
+            ':curso_id'                => (int) $data['curso_id'],
+            ':nome'                    => trim($data['nome']),
+            ':periodo'                 => (int) $data['periodo'],
+            ':numero_alunos'           => (int) $data['numero_alunos'],
+            ':turno'                   => $data['turno'] ?? 'manha',
+            ':dia_semana_preferencial' => !empty($data['dia_semana_preferencial']) ? (int)$data['dia_semana_preferencial'] : null,
+            ':restricoes'              => !empty($data['restricoes']) ? json_encode($data['restricoes']) : null,
+            ':created_by'              => $usuarioId,
+            ':updated_by'              => $usuarioId,
         ]);
 
         return (int) $this->pdo->lastInsertId();
@@ -129,23 +131,27 @@ class TurmaRepository
     {
         $stmt = $this->pdo->prepare('
             UPDATE turmas SET
-                curso_id      = :curso_id,
-                nome          = :nome,
-                periodo       = :periodo,
-                numero_alunos = :numero_alunos,
-                restricoes    = :restricoes,
-                updated_by    = :updated_by
+                curso_id                = :curso_id,
+                nome                    = :nome,
+                periodo                 = :periodo,
+                numero_alunos           = :numero_alunos,
+                turno                   = :turno,
+                dia_semana_preferencial = :dia_semana_preferencial,
+                restricoes              = :restricoes,
+                updated_by              = :updated_by
             WHERE id = :id
         ');
 
         $stmt->execute([
-            ':id'            => $id,
-            ':curso_id'      => (int) $data['curso_id'],
-            ':nome'          => trim($data['nome']),
-            ':periodo'       => (int) $data['periodo'],
-            ':numero_alunos' => (int) $data['numero_alunos'],
-            ':restricoes'    => !empty($data['restricoes']) ? json_encode($data['restricoes']) : null,
-            ':updated_by'    => $usuarioId,
+            ':id'                      => $id,
+            ':curso_id'                => (int) $data['curso_id'],
+            ':nome'                    => trim($data['nome']),
+            ':periodo'                 => (int) $data['periodo'],
+            ':numero_alunos'           => (int) $data['numero_alunos'],
+            ':turno'                   => $data['turno'] ?? 'manha',
+            ':dia_semana_preferencial' => !empty($data['dia_semana_preferencial']) ? (int)$data['dia_semana_preferencial'] : null,
+            ':restricoes'              => !empty($data['restricoes']) ? json_encode($data['restricoes']) : null,
+            ':updated_by'              => $usuarioId,
         ]);
     }
 

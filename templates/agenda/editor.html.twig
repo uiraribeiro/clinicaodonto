@@ -66,75 +66,93 @@
     </div>
 </div>
 
-{# ── Grade semanal ── #}
-<div class="row g-3 mb-4">
-    {% for dia_num, dia_nome in dias_nomes %}
-        <div class="col-lg-4 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
-                    <strong class="small">{{ dia_nome }}</strong>
-                    {% if semana is not null and semana.data_inicio is defined %}
-                        <span class="text-muted" style="font-size:.75rem">
-                            {{ semana.data_inicio|date_modify('+' ~ (dia_num - 1) ~ ' days')|date('d/m') }}
-                        </span>
-                    {% endif %}
-                </div>
-                <div class="card-body p-2">
-                    {% if por_dia[dia_num] is defined and por_dia[dia_num]|length > 0 %}
-                        {% for ag in por_dia[dia_num] %}
-                            <div class="border rounded p-2 mb-2 position-relative
-                                {% if ag.espaco_tipo == 'clinica' %}border-primary bg-primary-subtle{% else %}border-success bg-success-subtle{% endif %}">
-                                {% if ag.gerado_por_ia %}
-                                    <span class="badge bg-secondary position-absolute top-0 end-0 mt-1 me-1" style="font-size:.6rem">IA</span>
-                                {% endif %}
-                                <div class="small fw-semibold text-truncate">{{ ag.turma_nome }}</div>
-                                <div class="small text-muted text-truncate">{{ ag.disciplina_nome }}</div>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <span class="small">
-                                        <i class="bi bi-clock me-1"></i>{{ ag.hora_inicio|slice(0,5) }}–{{ ag.hora_fim|slice(0,5) }}
-                                    </span>
-                                    <span class="small">
-                                        <i class="bi bi-{% if ag.espaco_tipo == 'clinica' %}hospital{% else %}flask{% endif %} me-1"></i>{{ ag.espaco_tipo|capitalize }}
-                                    </span>
-                                </div>
-                                {% if ag.professor_nome %}
-                                    <div class="small text-muted mt-1 text-truncate">
-                                        <i class="bi bi-person me-1"></i>{{ ag.professor_nome }}
+{# ── Grade semanal por turnos ── #}
+{% set turnos = {'manha': 'Manhã (9:20–12:05)', 'tarde': 'Tarde (13:10–15:55)', 'noturno': 'Noturno (19:15–22:00)'} %}
+{% set turno_hora = {'manha': '09:20', 'tarde': '13:10', 'noturno': '19:15'} %}
+{% set turno_fim  = {'manha': '12:05', 'tarde': '15:55', 'noturno': '22:00'} %}
+{% set turno_class = {'manha': 'bg-info-subtle border-info', 'tarde': 'bg-warning-subtle border-warning', 'noturno': 'bg-dark-subtle border-dark'} %}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0" style="min-width:700px">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:100px" class="align-middle text-center small">Dia</th>
+                        {% for turno_key, turno_label in turnos %}
+                            <th class="text-center small {{ turno_class[turno_key] }}">
+                                <i class="bi bi-sun{% if turno_key == 'tarde' %}-fill{% elseif turno_key == 'noturno' %}-moon-stars-fill{% else %}-rise{% endif %} me-1"></i>
+                                {{ turno_label }}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dia_num, dia_nome in dias_nomes %}
+                        <tr>
+                            <td class="align-top text-center fw-semibold small py-2">
+                                {{ dia_nome }}
+                                {% if semana is not null and semana.data_inicio is defined %}
+                                    <div class="text-muted fw-normal" style="font-size:.7rem">
+                                        {{ semana.data_inicio|date_modify('+' ~ (dia_num - 1) ~ ' days')|date('d/m') }}
                                     </div>
                                 {% endif %}
-                                <div class="mt-2">
+                            </td>
+                            {% for turno_key, turno_label in turnos %}
+                                <td class="align-top p-1" style="min-width:200px; vertical-align:top">
+                                    {# Agendamentos neste dia+turno #}
+                                    {% if por_dia_turno[dia_num] is defined and por_dia_turno[dia_num][turno_key] is defined %}
+                                        {% for ag in por_dia_turno[dia_num][turno_key] %}
+                                            <div class="border rounded p-1 mb-1 position-relative
+                                                {% if ag.espaco_tipo == 'clinica' %}border-primary bg-primary-subtle{% else %}border-success bg-success-subtle{% endif %}"
+                                                style="font-size:.75rem">
+                                                {% if ag.gerado_por_ia %}
+                                                    <span class="badge bg-secondary" style="font-size:.6rem;position:absolute;top:2px;right:2px">IA</span>
+                                                {% endif %}
+                                                <div class="fw-semibold text-truncate" style="max-width:calc(100% - 24px)">{{ ag.turma_nome }}</div>
+                                                <div class="text-muted text-truncate">{{ ag.disciplina_nome }}</div>
+                                                <div class="d-flex justify-content-between mt-1">
+                                                    <span>{{ ag.hora_inicio|slice(0,5) }}–{{ ag.hora_fim|slice(0,5) }}</span>
+                                                    <span class="badge {% if ag.espaco_tipo == 'clinica' %}bg-primary{% else %}bg-success{% endif %} text-white" style="font-size:.6rem">
+                                                        {{ ag.espaco_tipo == 'clinica' ? 'Clínica' : 'Lab' }}
+                                                    </span>
+                                                </div>
+                                                {% if ag.professor_nome %}
+                                                    <div class="text-muted text-truncate"><i class="bi bi-person me-1"></i>{{ ag.professor_nome }}</div>
+                                                {% endif %}
+                                                <button type="button"
+                                                        class="btn btn-outline-danger py-0 px-1 mt-1"
+                                                        style="font-size:.65rem"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalCancelar"
+                                                        data-id="{{ ag.id }}"
+                                                        data-desc="{{ ag.turma_nome }} / {{ ag.disciplina_nome }} ({{ ag.hora_inicio|slice(0,5) }})">
+                                                    <i class="bi bi-x-circle"></i> Cancelar
+                                                </button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {# Botão adicionar #}
                                     <button type="button"
-                                            class="btn btn-outline-danger btn-sm py-0 px-1"
-                                            style="font-size:.7rem"
+                                            class="btn btn-outline-secondary py-0 w-100"
+                                            style="font-size:.7rem;border-style:dashed"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#modalCancelar"
-                                            data-id="{{ ag.id }}"
-                                            data-desc="{{ ag.turma_nome }} / {{ ag.disciplina_nome }} ({{ ag.hora_inicio|slice(0,5) }})">
-                                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                                            data-bs-target="#modalAdicionar"
+                                            data-dia="{{ dia_num }}"
+                                            data-dia-nome="{{ dia_nome }}"
+                                            data-turno="{{ turno_key }}"
+                                            data-hora-inicio="{{ turno_hora[turno_key] }}"
+                                            data-hora-fim="{{ turno_fim[turno_key] }}">
+                                        <i class="bi bi-plus-circle me-1"></i>+ Adicionar
                                     </button>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center text-muted py-3" style="font-size:.8rem">
-                            <i class="bi bi-calendar-x d-block mb-1"></i>Sem agendamentos
-                        </div>
-                    {% endif %}
-
-                    {# Botão adicionar neste dia #}
-                    <button type="button"
-                            class="btn btn-outline-primary btn-sm w-100 mt-1"
-                            style="font-size:.75rem"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalAdicionar"
-                            data-dia="{{ dia_num }}"
-                            data-dia-nome="{{ dia_nome }}">
-                        <i class="bi bi-plus-circle me-1"></i>Adicionar
-                    </button>
-                </div>
-            </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    {% endfor %}
+    </div>
 </div>
 
 {# ── Pendentes esta semana ── #}
@@ -367,7 +385,7 @@ document.getElementById('modalCancelar').addEventListener('show.bs.modal', funct
     document.getElementById('cancelarDesc').textContent = desc;
 });
 
-// Modal adicionar: pré-preenche campos quando aberto de um pendente ou de um dia
+// Modal adicionar: pré-preenche campos quando aberto de um pendente ou de uma célula da grade
 document.getElementById('modalAdicionar').addEventListener('show.bs.modal', function(e) {
     const btn = e.relatedTarget;
     if (!btn) return;
@@ -377,6 +395,8 @@ document.getElementById('modalAdicionar').addEventListener('show.bs.modal', func
     const numAlunos    = btn.dataset.numAlunos;
     const espaco       = btn.dataset.espaco;
     const dia          = btn.dataset.dia;
+    const horaInicio   = btn.dataset.horaInicio;
+    const horaFim      = btn.dataset.horaFim;
 
     if (turmaId) {
         const selTurma = document.getElementById('selectTurma');
@@ -395,6 +415,12 @@ document.getElementById('modalAdicionar').addEventListener('show.bs.modal', func
     }
     if (dia) {
         document.getElementById('selectDia').value = dia;
+    }
+    if (horaInicio) {
+        document.querySelector('[name="hora_inicio"]').value = horaInicio;
+    }
+    if (horaFim) {
+        document.querySelector('[name="hora_fim"]').value = horaFim;
     }
 });
 

@@ -120,6 +120,33 @@
                             Capacidade máxima: <strong>30 alunos</strong> (clínica e laboratório).
                         </div>
                     </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Turno <span class="text-danger">*</span></label>
+                        <select name="turno" class="form-select {{ errors.turno is defined ? 'is-invalid' : '' }}" required>
+                            <option value="manha"   {{ turma.turno|default('manha') == 'manha'   ? 'selected' : '' }}>Manhã (9:20 – 12:05)</option>
+                            <option value="tarde"   {{ turma.turno|default('') == 'tarde'   ? 'selected' : '' }}>Tarde (13:10 – 15:55)</option>
+                            <option value="noturno" {{ turma.turno|default('') == 'noturno' ? 'selected' : '' }}>Noturno (19:15 – 22:00)</option>
+                        </select>
+                        <div class="form-text">Horário padrão das aulas práticas da turma.</div>
+                        {% if errors.turno is defined %}
+                        <div class="invalid-feedback">{{ errors.turno|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Dia Preferencial</label>
+                        <select name="dia_semana_preferencial" class="form-select">
+                            <option value="">Sem preferência</option>
+                            <option value="1" {{ turma.dia_semana_preferencial|default('') == 1 ? 'selected' : '' }}>Segunda-feira</option>
+                            <option value="2" {{ turma.dia_semana_preferencial|default('') == 2 ? 'selected' : '' }}>Terça-feira</option>
+                            <option value="3" {{ turma.dia_semana_preferencial|default('') == 3 ? 'selected' : '' }}>Quarta-feira</option>
+                            <option value="4" {{ turma.dia_semana_preferencial|default('') == 4 ? 'selected' : '' }}>Quinta-feira</option>
+                            <option value="5" {{ turma.dia_semana_preferencial|default('') == 5 ? 'selected' : '' }}>Sexta-feira</option>
+                            <option value="6" {{ turma.dia_semana_preferencial|default('') == 6 ? 'selected' : '' }}>Sábado</option>
+                        </select>
+                        <div class="form-text">Dia da semana preferencial para as aulas práticas.</div>
+                    </div>
                 </div>
             </div>
         </div>

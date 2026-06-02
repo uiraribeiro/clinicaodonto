@@ -75,8 +75,30 @@ final class ConstraintPropagator
 
         $ultimaSemana = empty($semanasUsadas) ? 0 : max($semanasUsadas);
 
-        usort($candidates, function (SlotCandidate $a, SlotCandidate $b) use ($pair, $ultimaSemana): int {
-            // Alternância: prefere semana com distância 2 da última usada
+        // Intervalos de hora de início por turno (para comparação rápida)
+        $turnoHoraInicio = ['manha' => '06:00:00', 'tarde' => '13:00:00', 'noturno' => '19:00:00'];
+        $turnoHoraFim    = ['manha' => '12:59:59', 'tarde' => '18:59:59', 'noturno' => '23:59:59'];
+        $turnoAlvo       = $pair->turno ?? 'manha';
+        $diaAlvo         = $pair->diaSemanaPreferencial;
+
+        $turnoMatch = static function (SlotCandidate $s) use ($turnoAlvo, $turnoHoraInicio, $turnoHoraFim): bool {
+            return $s->horaInicio >= $turnoHoraInicio[$turnoAlvo]
+                && $s->horaInicio <= $turnoHoraFim[$turnoAlvo];
+        };
+
+        usort($candidates, function (SlotCandidate $a, SlotCandidate $b) use ($pair, $ultimaSemana, $turnoMatch, $diaAlvo): int {
+            // 1. Slot no turno preferencial da turma + dia preferencial (prioridade máxima)
+            $aTurno = $turnoMatch($a) ? 0 : 1;
+            $bTurno = $turnoMatch($b) ? 0 : 1;
+            $aDia   = ($diaAlvo && $a->diaSemana === $diaAlvo) ? 0 : 1;
+            $bDia   = ($diaAlvo && $b->diaSemana === $diaAlvo) ? 0 : 1;
+            $aScore = $aTurno * 2 + $aDia;
+            $bScore = $bTurno * 2 + $bDia;
+            if ($aScore !== $bScore) {
+                return $aScore <=> $bScore;
+            }
+
+            // 2. Alternância: prefere semana com distância 2 da última usada
             if ($pair->permiteAlternancia && $ultimaSemana > 0) {
                 $aAlterna = abs($a->numeroSemana - $ultimaSemana) === 2 ? 0 : 1;
                 $bAlterna = abs($b->numeroSemana - $ultimaSemana) === 2 ? 0 : 1;
@@ -85,12 +107,12 @@ final class ConstraintPropagator
                 }
             }
 
-            // Semana mais cedo primeiro
+            // 3. Semana mais cedo primeiro
             if ($a->numeroSemana !== $b->numeroSemana) {
                 return $a->numeroSemana <=> $b->numeroSemana;
             }
 
-            // Dias centrais antes dos extremos (3=qua, 2=ter, 4=qui, 1=seg, 5=sex, 6=sáb)
+            // 4. Dias centrais antes dos extremos (3=qua, 2=ter, 4=qui, 1=seg, 5=sex, 6=sáb)
             $priorDia = [3 => 0, 2 => 1, 4 => 1, 1 => 2, 5 => 2, 6 => 3];
             $pa = $priorDia[$a->diaSemana] ?? 99;
             $pb = $priorDia[$b->diaSemana] ?? 99;

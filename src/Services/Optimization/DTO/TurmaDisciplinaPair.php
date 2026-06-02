@@ -11,13 +11,13 @@ namespace App\Services\Optimization\DTO;
 final class TurmaDisciplinaPair
 {
     public function __construct(
-        public readonly int     $turmaDiscId,       // turma_disciplina.id
+        public readonly int     $turmaDiscId,           // turma_disciplina.id
         public readonly int     $turmaId,
         public readonly string  $turmaNome,
         public readonly int     $numAlunos,
         public readonly int     $disciplinaId,
         public readonly string  $disciplinaNome,
-        public readonly string  $disciplinaTipo,    // 'estagio' | 'pratica_comum'
+        public readonly string  $disciplinaTipo,        // 'estagio' | 'pratica_comum'
         public readonly bool    $usaClinica,
         public readonly bool    $usaLaboratorio,
         public readonly int     $minimoEncontros,
@@ -29,6 +29,8 @@ final class TurmaDisciplinaPair
         public readonly ?int    $professorId,
         public readonly ?int    $preceptorId,
         public readonly string  $semestreRef,
+        public readonly string  $turno = 'manha',       // manha | tarde | noturno
+        public readonly ?int    $diaSemanaPreferencial = null, // 1=seg...6=sáb, null=sem preferência
     ) {}
 
     /** Retorna a duração em horas (para logs legíveis). */
