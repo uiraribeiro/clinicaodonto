@@ -67,17 +67,19 @@ class TurmaRepository
 
         $stmt = $this->pdo->prepare('
             SELECT
-                td.id           AS vinculo_id,
+                td.id                      AS vinculo_id,
                 td.professor_id,
                 td.preceptor_id,
-                d.id            AS disciplina_id,
+                td.turno,
+                td.dia_semana_preferencial,
+                d.id                       AS disciplina_id,
                 d.codigo,
-                d.nome          AS disciplina_nome,
+                d.nome                     AS disciplina_nome,
                 d.tipo,
                 d.usa_clinica,
                 d.usa_laboratorio,
-                p.nome          AS professor_nome,
-                pc.nome         AS preceptor_nome
+                p.nome                     AS professor_nome,
+                pc.nome                    AS preceptor_nome
             FROM turma_disciplina td
             JOIN disciplinas d  ON d.id  = td.disciplina_id
             LEFT JOIN professores p  ON p.id  = td.professor_id
@@ -105,15 +107,20 @@ class TurmaRepository
     {
         $stmt = $this->pdo->prepare('
             INSERT INTO turmas
-                (curso_id, nome, periodo, numero_alunos, turno, dia_semana_preferencial, restricoes,
+                (curso_id, disciplina_id, professor_id, preceptor_id,
+                 nome, periodo, numero_alunos, turno, dia_semana_preferencial, restricoes,
                  ativo, created_by, updated_by)
             VALUES
-                (:curso_id, :nome, :periodo, :numero_alunos, :turno, :dia_semana_preferencial, :restricoes,
+                (:curso_id, :disciplina_id, :professor_id, :preceptor_id,
+                 :nome, :periodo, :numero_alunos, :turno, :dia_semana_preferencial, :restricoes,
                  1, :created_by, :updated_by)
         ');
 
         $stmt->execute([
             ':curso_id'                => (int) $data['curso_id'],
+            ':disciplina_id'           => !empty($data['disciplina_id']) ? (int)$data['disciplina_id'] : null,
+            ':professor_id'            => !empty($data['professor_id'])  ? (int)$data['professor_id']  : null,
+            ':preceptor_id'            => !empty($data['preceptor_id'])  ? (int)$data['preceptor_id']  : null,
             ':nome'                    => trim($data['nome']),
             ':periodo'                 => (int) $data['periodo'],
             ':numero_alunos'           => (int) $data['numero_alunos'],
@@ -132,6 +139,9 @@ class TurmaRepository
         $stmt = $this->pdo->prepare('
             UPDATE turmas SET
                 curso_id                = :curso_id,
+                disciplina_id           = :disciplina_id,
+                professor_id            = :professor_id,
+                preceptor_id            = :preceptor_id,
                 nome                    = :nome,
                 periodo                 = :periodo,
                 numero_alunos           = :numero_alunos,
@@ -145,6 +155,9 @@ class TurmaRepository
         $stmt->execute([
             ':id'                      => $id,
             ':curso_id'                => (int) $data['curso_id'],
+            ':disciplina_id'           => !empty($data['disciplina_id']) ? (int)$data['disciplina_id'] : null,
+            ':professor_id'            => !empty($data['professor_id'])  ? (int)$data['professor_id']  : null,
+            ':preceptor_id'            => !empty($data['preceptor_id'])  ? (int)$data['preceptor_id']  : null,
             ':nome'                    => trim($data['nome']),
             ':periodo'                 => (int) $data['periodo'],
             ':numero_alunos'           => (int) $data['numero_alunos'],
@@ -152,6 +165,36 @@ class TurmaRepository
             ':dia_semana_preferencial' => !empty($data['dia_semana_preferencial']) ? (int)$data['dia_semana_preferencial'] : null,
             ':restricoes'              => !empty($data['restricoes']) ? json_encode($data['restricoes']) : null,
             ':updated_by'              => $usuarioId,
+        ]);
+    }
+
+    /**
+     * Upsert do único registro turma_disciplina para este semestre.
+     * Garante que o otimizador encontre o par turma×disciplina para o semestre correto.
+     */
+    public function syncDisciplinaSemestre(
+        int $turmaId,
+        int $disciplinaId,
+        ?int $professorId,
+        ?int $preceptorId,
+        string $semestreRef,
+        int $usuarioId
+    ): void {
+        $this->pdo->prepare('
+            INSERT INTO turma_disciplina
+                (turma_id, disciplina_id, professor_id, preceptor_id, semestre_ref)
+            VALUES
+                (:turma_id, :disciplina_id, :professor_id, :preceptor_id, :semestre_ref)
+            ON DUPLICATE KEY UPDATE
+                disciplina_id = VALUES(disciplina_id),
+                professor_id  = VALUES(professor_id),
+                preceptor_id  = VALUES(preceptor_id)
+        ')->execute([
+            ':turma_id'      => $turmaId,
+            ':disciplina_id' => $disciplinaId,
+            ':professor_id'  => $professorId,
+            ':preceptor_id'  => $preceptorId,
+            ':semestre_ref'  => $semestreRef,
         ]);
     }
 
@@ -191,9 +234,9 @@ class TurmaRepository
 
         $stmtIns = $this->pdo->prepare('
             INSERT INTO turma_disciplina
-                (turma_id, disciplina_id, professor_id, preceptor_id, semestre_ref)
+                (turma_id, disciplina_id, professor_id, preceptor_id, semestre_ref, turno, dia_semana_preferencial)
             VALUES
-                (:turma_id, :disciplina_id, :professor_id, :preceptor_id, :semestre_ref)
+                (:turma_id, :disciplina_id, :professor_id, :preceptor_id, :semestre_ref, :turno, :dia)
         ');
 
         foreach ($disciplinas as $disc) {
@@ -202,12 +245,18 @@ class TurmaRepository
                 continue;
             }
 
+            $turnoValido = in_array($disc['turno'] ?? '', ['manha', 'tarde', 'noturno'], true)
+                ? $disc['turno']
+                : null;
+
             $stmtIns->execute([
                 ':turma_id'      => $turmaId,
                 ':disciplina_id' => $disciplinaId,
                 ':professor_id'  => !empty($disc['professor_id']) ? (int) $disc['professor_id'] : null,
                 ':preceptor_id'  => !empty($disc['preceptor_id']) ? (int) $disc['preceptor_id'] : null,
                 ':semestre_ref'  => $semestreRef,
+                ':turno'         => $turnoValido,
+                ':dia'           => !empty($disc['dia_semana_preferencial']) ? (int) $disc['dia_semana_preferencial'] : null,
             ]);
         }
     }

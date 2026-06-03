@@ -40,6 +40,11 @@ class TurmaValidator
             $errors['numero_alunos'] = 'O número de alunos deve ser entre 1 e 30.';
         }
 
+        // Disciplina obrigatória (quando enviada pelo formulário completo)
+        if (array_key_exists('disciplina_id', $data) && empty($data['disciplina_id'])) {
+            $errors['disciplina_id'] = 'Selecione a disciplina da turma.';
+        }
+
         return $errors;
     }
 }

@@ -27,9 +27,11 @@ odonto-scheduler/
 ├── database/
 │   └── migrations/
 │       ├── 000_template.sql            # Template para novas migrations
-│       ├── 001_schema_inicial.sql      # Schema completo (27 tabelas)
+│       ├── 001_schema_inicial.sql      # Schema completo (todas as tabelas)
 │       ├── 002_seed_perfis.sql         # Perfis + usuário admin@odonto.local
-│       └── 003_seed_exemplo.sql        # Dados de exemplo (semestre 2026.1)
+│       ├── 003_seed_exemplo.sql        # Dados de exemplo (semestre 2026.1)
+│       ├── 004_turmas_turno.sql        # turno + dia_semana_preferencial em turmas/turma_disciplina
+│       └── 005_turma_disciplina_1para1.sql  # disciplina_id/professor_id/preceptor_id em turmas; 1:1 enforçado
 │
 ├── docker/
 │   ├── nginx/
@@ -53,20 +55,20 @@ odonto-scheduler/
 │   ├── Controllers/
 │   │   ├── AuthController.php          # Login, logout, forbidden
 │   │   ├── DashboardController.php     # Dashboard: index, semana, dia, mensal, JSON
-│   │   ├── AgendaController.php        # Agenda: gerar, show, publicar, simulação
-│   │   ├── BedrockController.php       # IA: sugestões, aceitar, rejeitar, chat
+│   │   ├── AgendaController.php        # Agenda: gerar, show, publicar, editor por semana
+│   │   ├── BedrockController.php       # IA: sugestões, chat, aplicar proposta
 │   │   ├── RelatorioController.php     # Relatórios: 5 views + exportar (PDF/Excel/CSV)
 │   │   ├── UsuarioController.php       # CRUD usuários (admin only)
 │   │   └── cadastros/
+│   │       ├── AgendaSemestralController.php
+│   │       ├── ClinicaController.php
 │   │       ├── DisciplinaController.php
+│   │       ├── HorarioController.php
+│   │       ├── LaboratorioController.php
+│   │       ├── PreceptorController.php
 │   │       ├── ProfessorController.php
 │   │       ├── ProfessorDisciplinaController.php
-│   │       ├── PreceptorController.php
-│   │       ├── ClinicaController.php
-│   │       ├── LaboratorioController.php
-│   │       ├── TurmaController.php
-│   │       ├── HorarioController.php
-│   │       └── AgendaSemestralController.php
+│   │       └── TurmaController.php     # CRUD turmas; sincroniza turma_disciplina via syncDisciplinaSemestre()
 │   │
 │   ├── Handlers/
 │   │   └── HttpErrorHandler.php        # Páginas de erro amigáveis (404/403/500)
@@ -79,27 +81,28 @@ odonto-scheduler/
 │   │   └── SecurityMiddleware.php      # Cookie seguro + HSTS em produção
 │   │
 │   ├── Repositories/
-│   │   ├── AgendaRepository.php        # Queries de agenda, dashboard, conflitos
+│   │   ├── AgendaRepository.php        # Queries de agenda, editor, conflitos
 │   │   ├── ClinicaRepository.php
 │   │   ├── DisciplinaRepository.php
 │   │   ├── LaboratorioRepository.php
 │   │   ├── PreceptorRepository.php
 │   │   ├── ProfessorRepository.php
-│   │   ├── RelatorioRepository.php     # 9 queries analíticas para relatórios
+│   │   ├── RelatorioRepository.php     # Queries analíticas para relatórios
 │   │   ├── SemestreRepository.php
 │   │   ├── SugestaoRepository.php      # Sugestões Bedrock: salvar, aceitar, rejeitar
-│   │   ├── TurmaRepository.php
+│   │   ├── TurmaRepository.php         # CRUD turmas + syncDisciplinaSemestre()
 │   │   └── UsuarioRepository.php
 │   │
 │   ├── Services/
 │   │   ├── AuthService.php             # Login, logout, log tentativas, brute force
 │   │   ├── CsrfService.php             # Gera e valida token CSRF
 │   │   ├── Agenda/
-│   │   │   ├── AgendaService.php       # Orquestra geração de agenda + slots dinâmicos
+│   │   │   ├── AgendaService.php       # Orquestra geração, editor por semana, slots dinâmicos
 │   │   │   └── SimulacaoService.php    # Modo simulação (versão descartável)
 │   │   ├── Bedrock/
-│   │   │   ├── BedrockClient.php       # AWS SDK wrapper + cache Redis + log
-│   │   │   ├── ChatService.php         # Chat multi-turno com histórico
+│   │   │   ├── AgendaTools.php         # 6 ferramentas de agenda para tool use da IA
+│   │   │   ├── BedrockClient.php       # AWS SDK wrapper + tool use loop + cache Redis + log
+│   │   │   ├── ChatService.php         # Chat multi-turno com tool use (Nova Lite)
 │   │   │   ├── PromptBuilder.php       # Prompts PT-BR para análise e chat
 │   │   │   ├── SugestaoService.php     # Solicita e persiste sugestões da IA
 │   │   │   └── SuggestionValidator.php # Valida JSON da IA contra schema + DB
@@ -110,22 +113,22 @@ odonto-scheduler/
 │   │   └── Optimization/
 │   │       ├── BacktrackingSolver.php  # MRV + backtracking com MAX_ITERATIONS
 │   │       ├── ConflictDetector.php    # Scan pós-geração O(n²) de conflitos
-│   │       ├── ConstraintPropagator.php# Filtra e ordena slots candidatos
+│   │       ├── ConstraintPropagator.php# Filtra e ordena slots candidatos (turno + dia preferencial)
 │   │       ├── OptimizationContext.php # Estado mutável durante backtracking
 │   │       ├── OptimizationLogger.php  # Batch INSERT em optimization_logs
-│   │       ├── RuleValidator.php       # 16 regras puras e stateless
+│   │       ├── RuleValidator.php       # Regras puras e stateless (única fonte de verdade)
 │   │       ├── ScheduleOptimizer.php   # Orquestrador: solve → conflitos → commit
 │   │       └── DTO/
 │   │           ├── Allocation.php
 │   │           ├── OptimizationResult.php
 │   │           ├── SlotCandidate.php
-│   │           └── TurmaDisciplinaPair.php
+│   │           └── TurmaDisciplinaPair.php  # turno + diaSemanaPreferencial como soft-constraints
 │   │
 │   └── Validators/
 │       ├── DisciplinaValidator.php
 │       ├── PreceptorValidator.php
 │       ├── ProfessorValidator.php
-│       └── TurmaValidator.php
+│       └── TurmaValidator.php          # Valida disciplina_id obrigatório
 │
 ├── storage/                            # Runtime — NÃO commitar conteúdo
 │   ├── cache/                          # Cache Twig compilado
@@ -136,7 +139,8 @@ odonto-scheduler/
     ├── layout/
     │   └── base.html.twig              # Layout base Bootstrap 5.3 + Alpine.js
     ├── auth/
-    │   └── login.html.twig
+    │   ├── login.html.twig
+    │   └── forbidden.html.twig
     ├── dashboard/
     │   ├── index.html.twig
     │   ├── agenda_semana.html.twig
@@ -144,34 +148,62 @@ odonto-scheduler/
     │   └── agenda_mensal.html.twig
     ├── agenda/
     │   ├── index.html.twig
+    │   ├── editor.html.twig            # Editor manual por semana (tabela dia × turno)
     │   ├── gerar.html.twig
     │   ├── show.html.twig
     │   ├── simulacao.html.twig
     │   └── placeholder.html.twig
     ├── cadastros/
+    │   ├── clinicas/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── bloqueios.html.twig
     │   ├── disciplinas/
-    │   ├── professores/
-    │   ├── preceptores/
-    │   ├── clinica/
-    │   ├── laboratorio/
-    │   ├── turmas/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── show.html.twig
     │   ├── horarios/
-    │   └── semestres/
+    │   │   └── index.html.twig
+    │   ├── laboratorios/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── bloqueios.html.twig
+    │   ├── preceptores/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── show.html.twig
+    │   ├── professor_disciplina/
+    │   │   └── index.html.twig
+    │   ├── professores/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── show.html.twig
+    │   ├── semestres/
+    │   │   ├── index.html.twig
+    │   │   ├── form.html.twig
+    │   │   └── show.html.twig
+    │   └── turmas/
+    │       ├── index.html.twig
+    │       ├── form.html.twig          # Disciplina/professor/preceptor 1:1 no formulário
+    │       └── show.html.twig
     ├── ia/
     │   ├── sugestoes.html.twig         # Lista de sugestões com aprovação humana
-    │   └── chat.html.twig              # Chat multi-turno Alpine.js
+    │   └── chat.html.twig              # Chat com tool use + cards de proposta
     ├── relatorios/
-    │   ├── index.html.twig             # Hub de relatórios com cards
-    │   ├── semana.html.twig            # Agenda detalhada por semana
-    │   ├── turma.html.twig             # Carga por turma com progresso
-    │   ├── disciplina.html.twig        # Uso por disciplina com totais
-    │   ├── professor.html.twig         # Carga prof./preceptor + alerta sobrecarga
-    │   └── espaco.html.twig            # Ocupação semanal de clínicas e labs
+    │   ├── index.html.twig
+    │   ├── semana.html.twig
+    │   ├── turma.html.twig
+    │   ├── disciplina.html.twig
+    │   ├── professor.html.twig
+    │   └── espaco.html.twig
     ├── usuarios/
+    │   ├── index.html.twig
+    │   ├── form.html.twig
+    │   └── show.html.twig
     └── errors/
         ├── 404.html.twig
         ├── 403.html.twig
-        └── 500.html.twig               # Debug stack trace visível apenas em dev
+        └── 500.html.twig               # Stack trace visível apenas em dev
 ```
 
 ## Fluxo de dados
@@ -184,7 +216,7 @@ Request → Nginx → PHP-FPM → public/index.php
   → CsrfMiddleware (POST/PUT/DELETE)
   → PermissionMiddleware (por grupo de rotas)
   → Controller → Service → Repository → PDO → MySQL
-               ↘ BedrockClient → AWS Bedrock
+               ↘ BedrockClient → AWS Bedrock (Nova Lite, tool use loop)
                ↘ CsvExporter / ExcelExporter / PdfExporter
   ← Response (HTML via Twig | JSON | arquivo binário)
 ```
@@ -202,8 +234,8 @@ docker compose exec php php bin/seed.php --example
 # Verificar requisitos
 docker compose exec php php bin/check.php
 
-# Nova migration
-cp database/migrations/000_template.sql database/migrations/004_minha_mudanca.sql
+# Nova migration (próxima: 006_)
+cp database/migrations/000_template.sql database/migrations/006_minha_mudanca.sql
 docker compose exec php php bin/migrate.php
 ```
 

@@ -71,15 +71,23 @@ class TurmaController
         ServerRequestInterface $request,
         ResponseInterface $response
     ): ResponseInterface {
-        $cursos = $this->repo->findAllCursos();
+        $cursos      = $this->repo->findAllCursos();
+        $disciplinas = $this->disciplinaRepo->findAll(true);
+        $professores = $this->professorRepo->findAll(true);
+        $preceptores = $this->preceptorRepo->findAll(true);
+        $semestre    = $this->semestreRepo->findAtivo();
 
         return $this->twig->render(
             $response,
             'cadastros/turmas/form.html.twig',
             $this->ctx([
-                'turma'  => null,
-                'cursos' => $cursos,
-                'modo'   => 'criar',
+                'turma'       => null,
+                'cursos'      => $cursos,
+                'disciplinas' => $disciplinas,
+                'professores' => $professores,
+                'preceptores' => $preceptores,
+                'semestre'    => $semestre,
+                'modo'        => 'criar',
             ])
         );
     }
@@ -108,12 +116,13 @@ class TurmaController
         $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
         $turmaId   = $this->repo->create($data, $usuarioId);
 
-        // Vincula disciplinas ao semestre ativo, se enviadas
         $semestre = $this->semestreRepo->findAtivo();
-        if ($semestre && !empty($data['disciplinas'])) {
-            $this->repo->saveDisciplinas(
+        if ($semestre && !empty($data['disciplina_id'])) {
+            $this->repo->syncDisciplinaSemestre(
                 $turmaId,
-                $data['disciplinas'],
+                (int) $data['disciplina_id'],
+                !empty($data['professor_id']) ? (int)$data['professor_id'] : null,
+                !empty($data['preceptor_id']) ? (int)$data['preceptor_id'] : null,
                 $semestre['referencia'],
                 $usuarioId
             );
@@ -227,12 +236,13 @@ class TurmaController
         $usuarioId = (int) ($_SESSION['usuario_id'] ?? 0);
         $this->repo->update($id, $data, $usuarioId);
 
-        // Atualiza disciplinas no semestre ativo
         $semestre = $this->semestreRepo->findAtivo();
-        if ($semestre && isset($data['disciplinas'])) {
-            $this->repo->saveDisciplinas(
+        if ($semestre && !empty($data['disciplina_id'])) {
+            $this->repo->syncDisciplinaSemestre(
                 $id,
-                (array) $data['disciplinas'],
+                (int) $data['disciplina_id'],
+                !empty($data['professor_id']) ? (int)$data['professor_id'] : null,
+                !empty($data['preceptor_id']) ? (int)$data['preceptor_id'] : null,
                 $semestre['referencia'],
                 $usuarioId
             );

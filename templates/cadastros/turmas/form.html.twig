@@ -147,6 +147,52 @@
                         </select>
                         <div class="form-text">Dia da semana preferencial para as aulas práticas.</div>
                     </div>
+
+                    {% if disciplinas is defined and disciplinas %}
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Disciplina <span class="text-danger">*</span></label>
+                        <select name="disciplina_id"
+                                class="form-select {{ errors.disciplina_id is defined ? 'is-invalid' : '' }}"
+                                required>
+                            <option value="">Selecione a disciplina...</option>
+                            {% for d in disciplinas %}
+                            <option value="{{ d.id }}"
+                                    {{ turma.disciplina_id|default('') == d.id ? 'selected' : '' }}>
+                                {{ d.nome|e }}{% if d.tipo == 'estagio' %} — Estágio{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.disciplina_id is defined %}
+                        <div class="invalid-feedback">{{ errors.disciplina_id|e }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Professor</label>
+                        <select name="professor_id" class="form-select">
+                            <option value="">Nenhum</option>
+                            {% for p in professores %}
+                            <option value="{{ p.id }}"
+                                    {{ turma.professor_id|default('') == p.id ? 'selected' : '' }}>
+                                {{ p.nome|e }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Preceptor</label>
+                        <select name="preceptor_id" class="form-select">
+                            <option value="">Nenhum</option>
+                            {% for pc in preceptores %}
+                            <option value="{{ pc.id }}"
+                                    {{ turma.preceptor_id|default('') == pc.id ? 'selected' : '' }}>
+                                {{ pc.nome|e }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

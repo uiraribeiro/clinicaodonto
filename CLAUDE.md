@@ -110,6 +110,23 @@ AWS_BEDROCK_REGION=us-east-1
 BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 ```
 
+## Modelo de dados — decisões importantes
+
+### Turma × Disciplina (1:1)
+Cada turma pertence a **uma única disciplina**. `turmas.disciplina_id` é o vínculo canônico.
+A tabela `turma_disciplina` é gerenciada automaticamente via `TurmaRepository::syncDisciplinaSemestre()` — ela existe para o otimizador (`loadPairs()`) filtrar por `semestre_ref` e armazenar overrides de turno/dia por semestre. Nunca manipular `turma_disciplina` manualmente pela UI.
+
+### Turno e dia preferencial
+Definidos na turma (`turmas.turno`, `turmas.dia_semana_preferencial`). O otimizador usa esses valores como soft-constraint (prioridade, não bloqueio). Se não houver slot disponível no turno/dia preferencial, aloca em outro.
+
+Horários por turno:
+- **manhã**: 09:20 – 12:05
+- **tarde**: 13:10 – 15:55
+- **noturno**: 19:15 – 22:00
+
+### Integração Bedrock (tool use)
+`BedrockClient::invocarComTools()` implementa o loop de tool use da Amazon Nova Lite (até 6 iterações). As 6 ferramentas estão em `AgendaTools`. Todo resultado de ferramenta passa pelo `RuleValidator` antes de ser apresentado. Nenhuma sugestão é aplicada sem aprovação humana explícita (rota `POST /ia/proposta/aplicar`).
+
 ## Migrations
 
 ```bash
@@ -117,17 +134,26 @@ BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 docker compose exec php php bin/migrate.php
 
 # Criar nova migration
-cp database/migrations/000_template.sql database/migrations/004_minha_mudanca.sql
+cp database/migrations/000_template.sql database/migrations/006_minha_mudanca.sql
 # edite o arquivo, depois:
 docker compose exec php php bin/migrate.php
 ```
 
+### Histórico de migrations
+| Arquivo | O que faz |
+|---|---|
+| `001_schema_inicial.sql` | Schema completo (todas as tabelas) |
+| `002_seed_perfis.sql` | Perfis + usuário admin |
+| `003_seed_exemplo.sql` | Dados de exemplo (semestre 2026.1) |
+| `004_turmas_turno.sql` | Adiciona `turno` e `dia_semana_preferencial` em `turmas` e `turma_disciplina` |
+| `005_turma_disciplina_1para1.sql` | Adiciona `disciplina_id/professor_id/preceptor_id` direto em `turmas`; altera unique key de `turma_disciplina` para `(turma_id, semestre_ref)` |
+
 ## Fases de implementação
 
 - **Fase 1** ✅ — Fundação: estrutura, Docker, auth, migrations
-- **Fase 2** — Cadastros CRUD completos
-- **Fase 3** — Motor de otimização (backtracking + propagação)
+- **Fase 2** ✅ (parcial) — Cadastros CRUD: disciplinas, turmas, professores, preceptores, clínicas, laboratórios, semestres
+- **Fase 3** ✅ — Motor de otimização (backtracking + propagação de restrições + editor manual por semana)
 - **Fase 4** — Dashboard (semanal, diário, mensal, indicadores)
-- **Fase 5** — Integração Amazon Bedrock (sugestões + chat)
+- **Fase 5** ✅ (parcial) — Integração Amazon Bedrock: sugestões + chat com tool use (Nova Lite)
 - **Fase 6** — Relatórios e exportação (PDF, Excel, CSV)
 - **Fase 7** — Segurança, deploy e documentação final
