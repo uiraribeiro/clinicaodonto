@@ -17,6 +17,8 @@
 .vscode/
 *.swp
 *.swo
+*.crt
+*.key
 
 # OS
 .DS_Store

@@ -18,7 +18,8 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - odonto_net
+#      - odonto_net
+      - universo-network
 
   # Nginx
   nginx:
@@ -26,14 +27,15 @@ services:
     container_name: odonto_nginx
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "8081:80"
     volumes:
       - .:/var/www/html
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php
     networks:
-      - odonto_net
+ #     - odonto_net
+      - universo-network
 
   # MySQL 8
   mysql:
@@ -56,7 +58,8 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - odonto_net
+#      - odonto_net
+      - universo-network
 
   # Redis (cache e rate limiting)
   redis:
@@ -72,12 +75,16 @@ services:
       timeout: 3s
       retries: 3
     networks:
-      - odonto_net
+#      - odonto_net
+      - universo-network
 
 volumes:
   mysql_data:
   redis_data:
 
+#networks:
+#  odonto_net:
+#    driver: bridge
 networks:
-  odonto_net:
+  universo-network:
     driver: bridge

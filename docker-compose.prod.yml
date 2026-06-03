@@ -26,11 +26,14 @@ services:
 
   nginx:
     ports:
-      - "80:80"
-      - "443:443"
+      - "8082:80"
+      - "4343:443"
     volumes:
       - ./docker/nginx/default.prod.conf:/etc/nginx/conf.d/default.conf
       - ./docker/nginx/certs:/etc/nginx/certs:ro   # certificados SSL
+    networks:
+#      - odonto_net
+      - universo-network
 
   mysql:
     ports: []   # remove exposição da porta 3306 ao host
