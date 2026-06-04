@@ -18,9 +18,11 @@ class TurmaRepository
     {
         if ($semestreRef !== '') {
             $stmt = $this->pdo->prepare('
-                SELECT DISTINCT t.*, c.nome AS curso_nome, c.sigla AS curso_sigla
+                SELECT DISTINCT t.*, c.nome AS curso_nome, c.sigla AS curso_sigla,
+                    d.nome AS disciplina_nome, d.codigo AS disciplina_codigo
                 FROM turmas t
                 JOIN cursos c ON c.id = t.curso_id
+                LEFT JOIN disciplinas d ON d.id = t.disciplina_id
                 JOIN turma_disciplina td ON td.turma_id = t.id
                     AND td.semestre_ref = :semestre_ref
                 WHERE t.ativo = 1
@@ -29,10 +31,11 @@ class TurmaRepository
             $stmt->execute([':semestre_ref' => $semestreRef]);
         } else {
             $stmt = $this->pdo->query('
-                SELECT t.*, c.nome AS curso_nome, c.sigla AS curso_sigla
+                SELECT t.*, c.nome AS curso_nome, c.sigla AS curso_sigla,
+                    d.nome AS disciplina_nome, d.codigo AS disciplina_codigo
                 FROM turmas t
                 JOIN cursos c ON c.id = t.curso_id
-                WHERE t.ativo = 1
+                LEFT JOIN disciplinas d ON d.id = t.disciplina_id
                 ORDER BY c.sigla, t.periodo, t.nome
             ');
         }

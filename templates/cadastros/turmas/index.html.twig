@@ -75,8 +75,8 @@
                             <th>Turma</th>
                             <th>Curso</th>
                             <th class="text-center">Período</th>
+                            <th>Disciplina</th>
                             <th class="text-center">Nº Alunos</th>
-                            <th class="text-center">Disciplinas</th>
                             <th class="text-center">Status</th>
                             <th class="text-center">Ações</th>
                         </tr>
@@ -89,6 +89,10 @@
                                 <td class="text-center">
                                     <span class="badge bg-secondary" x-text="t.periodo + 'º'"></span>
                                 </td>
+                                <td>
+                                    <span class="fw-semibold small" x-text="t.disciplina_nome || '—'"></span>
+                                    <span class="text-muted small ms-1" x-show="t.disciplina_codigo" x-text="'(' + t.disciplina_codigo + ')'"></span>
+                                </td>
                                 <td class="text-center">
                                     <span :class="t.numero_alunos > 25 ? 'badge bg-warning text-dark' : 'badge bg-light text-dark border'"
                                           x-text="t.numero_alunos">
@@ -96,9 +100,6 @@
                                     <i class="bi bi-exclamation-triangle-fill text-warning ms-1"
                                        x-show="t.numero_alunos > 25"
                                        title="Próximo ao limite de 30 da clínica"></i>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-info text-dark" x-text="t.disciplinas_count"></span>
                                 </td>
                                 <td class="text-center">
                                     <span :class="t.ativo ? 'badge bg-success' : 'badge bg-secondary'"
