@@ -57,6 +57,7 @@ $app->group('', function ($group) {
         $c->get('/professores/{id}',      [ProfessorController::class, 'show'])->setName('professores.show');
         $c->get('/professores/{id}/editar',[ProfessorController::class, 'edit'])->setName('professores.edit');
         $c->post('/professores/{id}',     [ProfessorController::class, 'update'])->setName('professores.update');
+        $c->post('/professores/{id}/desativar',[ProfessorController::class, 'toggleAtivo'])->setName('professores.toggle');
         $c->post('/professores/{id}/excluir',[ProfessorController::class, 'destroy'])->setName('professores.destroy');
 
         // Professor × Disciplina
@@ -71,6 +72,7 @@ $app->group('', function ($group) {
         $c->get('/preceptores/{id}',      [PreceptorController::class, 'show'])->setName('preceptores.show');
         $c->get('/preceptores/{id}/editar',[PreceptorController::class, 'edit'])->setName('preceptores.edit');
         $c->post('/preceptores/{id}',     [PreceptorController::class, 'update'])->setName('preceptores.update');
+        $c->post('/preceptores/{id}/desativar',[PreceptorController::class, 'toggleAtivo'])->setName('preceptores.toggle');
         $c->post('/preceptores/{id}/excluir',[PreceptorController::class, 'destroy'])->setName('preceptores.destroy');
 
         // Clínica

@@ -150,11 +150,29 @@ class ProfessorController
         return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
     }
 
+    public function toggleAtivo(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $id       = (int) $id;
+        $professor = $this->repo->findById($id);
+        if (!$professor) {
+            return $response->withStatus(404);
+        }
+        $this->repo->toggleAtivo($id, (int) ($_SESSION['usuario_id'] ?? 0));
+        $_SESSION['flash_success'] = $professor['ativo']
+            ? 'Professor desativado com sucesso.'
+            : 'Professor ativado com sucesso.';
+        return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
+    }
+
     public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $id = (int) $id;
-        $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
-        $_SESSION['flash_success'] = 'Professor desativado com sucesso.';
+        if ($this->repo->hasAgendamentos($id)) {
+            $_SESSION['flash_error'] = 'Não é possível excluir: professor possui agendamentos ativos.';
+            return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
+        }
+        $this->repo->hardDelete($id);
+        $_SESSION['flash_success'] = 'Professor excluído com sucesso.';
         return $response->withHeader('Location', '/cadastros/professores')->withStatus(302);
     }
 }

@@ -24,6 +24,23 @@
         <a href="/cadastros/preceptores/{{ preceptor.id }}/editar" class="btn btn-primary">
             <i class="bi bi-pencil me-2"></i>Editar
         </a>
+        <form action="/cadastros/preceptores/{{ preceptor.id }}/desativar" method="POST" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="btn btn-outline-warning"
+                    data-confirm="{{ preceptor.ativo ? 'Desativar o preceptor ' ~ preceptor.nome|e ~ '?' : 'Ativar o preceptor ' ~ preceptor.nome|e ~ '?' }}">
+                <i class="bi {{ preceptor.ativo ? 'bi-person-x' : 'bi-person-check' }} me-1"></i>
+                {{ preceptor.ativo ? 'Desativar' : 'Ativar' }}
+            </button>
+        </form>
+        <form action="/cadastros/preceptores/{{ preceptor.id }}/excluir" method="POST" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="btn btn-danger"
+                    data-confirm="Excluir permanentemente o preceptor {{ preceptor.nome|e }}? Esta ação não pode ser desfeita.">
+                <i class="bi bi-trash me-1"></i>Excluir
+            </button>
+        </form>
     </div>
 </div>
 

@@ -22,12 +22,18 @@ class DisciplinaController
     {
         $disciplinas = $this->repo->findAll();
 
+        $flashSuccess = $_SESSION['flash_success'] ?? null;
+        $flashError   = $_SESSION['flash_error']   ?? null;
+        unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
         return $this->twig->render($response, 'cadastros/disciplinas/index.html.twig', [
             'active_menu'    => 'disciplinas',
             'csrf_token'     => $this->csrfService->getToken(),
             'usuario_nome'   => $_SESSION['usuario_nome'] ?? '',
             'usuario_perfil' => $_SESSION['usuario_perfil'] ?? '',
             'disciplinas'    => $disciplinas,
+            'flash_success'  => $flashSuccess,
+            'flash_error'    => $flashError,
         ]);
     }
 
@@ -130,8 +136,19 @@ class DisciplinaController
     public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $id = (int) $id;
-        $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
-        $_SESSION['flash_success'] = 'Disciplina desativada com sucesso.';
+
+        if ($this->repo->hasTurmas($id)) {
+            $_SESSION['flash_error'] = 'Não é possível excluir: existem turmas vinculadas a esta disciplina.';
+            return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
+        }
+
+        if ($this->repo->hasAgendamentos($id)) {
+            $_SESSION['flash_error'] = 'Não é possível excluir: existem agendamentos vinculados a esta disciplina.';
+            return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
+        }
+
+        $this->repo->hardDelete($id);
+        $_SESSION['flash_success'] = 'Disciplina excluída com sucesso.';
         return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
     }
 }

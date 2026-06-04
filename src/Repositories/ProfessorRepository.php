@@ -147,6 +147,29 @@ class ProfessorRepository
         )->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
+    public function toggleAtivo(int $id, int $usuarioId): void
+    {
+        $this->pdo->prepare(
+            'UPDATE professores SET ativo = NOT ativo, updated_by = :uid WHERE id = :id'
+        )->execute([':uid' => $usuarioId, ':id' => $id]);
+    }
+
+    public function hasAgendamentos(int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM agendamentos WHERE professor_id = :id AND status != 'cancelado'"
+        );
+        $stmt->execute([':id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function hardDelete(int $id): void
+    {
+        $this->pdo->prepare('DELETE FROM professor_disponibilidade WHERE professor_id = :id')->execute([':id' => $id]);
+        $this->pdo->prepare('DELETE FROM professor_disciplina WHERE professor_id = :id')->execute([':id' => $id]);
+        $this->pdo->prepare('DELETE FROM professores WHERE id = :id')->execute([':id' => $id]);
+    }
+
     /**
      * Apaga todas as disponibilidades do professor e recria a partir do array fornecido.
      * Cada item do array deve conter: dia_semana, hora_inicio, hora_fim, semana_inicio, semana_fim.

@@ -150,11 +150,29 @@ class PreceptorController
         return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
     }
 
+    public function toggleAtivo(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $id        = (int) $id;
+        $preceptor = $this->repo->findById($id);
+        if (!$preceptor) {
+            return $response->withStatus(404);
+        }
+        $this->repo->toggleAtivo($id, (int) ($_SESSION['usuario_id'] ?? 0));
+        $_SESSION['flash_success'] = $preceptor['ativo']
+            ? 'Preceptor desativado com sucesso.'
+            : 'Preceptor ativado com sucesso.';
+        return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
+    }
+
     public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $id = (int) $id;
-        $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
-        $_SESSION['flash_success'] = 'Preceptor desativado com sucesso.';
+        if ($this->repo->hasAgendamentos($id)) {
+            $_SESSION['flash_error'] = 'Não é possível excluir: preceptor possui agendamentos ativos.';
+            return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
+        }
+        $this->repo->hardDelete($id);
+        $_SESSION['flash_success'] = 'Preceptor excluído com sucesso.';
         return $response->withHeader('Location', '/cadastros/preceptores')->withStatus(302);
     }
 }

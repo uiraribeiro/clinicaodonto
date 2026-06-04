@@ -103,10 +103,19 @@
                             <form action="/cadastros/professores/{{ p.id }}/desativar" method="POST" class="d-inline">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                                 <button type="submit"
-                                        class="btn btn-outline-danger"
+                                        class="btn btn-outline-warning"
                                         title="{{ p.ativo ? 'Desativar' : 'Ativar' }}"
                                         data-confirm="{{ p.ativo ? 'Desativar o professor ' ~ p.nome|e ~ '?' : 'Ativar o professor ' ~ p.nome|e ~ '?' }}">
                                     <i class="bi {{ p.ativo ? 'bi-person-x' : 'bi-person-check' }}"></i>
+                                </button>
+                            </form>
+                            <form action="/cadastros/professores/{{ p.id }}/excluir" method="POST" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit"
+                                        class="btn btn-outline-danger"
+                                        title="Excluir permanentemente"
+                                        data-confirm="Excluir permanentemente o professor {{ p.nome|e }}? Esta ação não pode ser desfeita.">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                         </div>
@@ -165,10 +174,19 @@
                     <form action="/cadastros/professores/{{ p.id }}/desativar" method="POST" class="d-inline flex-grow-1">
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                         <button type="submit"
-                                class="btn btn-outline-danger w-100"
+                                class="btn btn-outline-warning w-100"
                                 data-confirm="{{ p.ativo ? 'Desativar o professor ' ~ p.nome|e ~ '?' : 'Ativar o professor ' ~ p.nome|e ~ '?' }}">
                             <i class="bi {{ p.ativo ? 'bi-person-x' : 'bi-person-check' }} me-1"></i>
                             {{ p.ativo ? 'Desativar' : 'Ativar' }}
+                        </button>
+                    </form>
+                    <form action="/cadastros/professores/{{ p.id }}/excluir" method="POST" class="d-inline">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                        <button type="submit"
+                                class="btn btn-outline-danger"
+                                title="Excluir permanentemente"
+                                data-confirm="Excluir permanentemente o professor {{ p.nome|e }}? Esta ação não pode ser desfeita.">
+                            <i class="bi bi-trash"></i>
                         </button>
                     </form>
                 </div>

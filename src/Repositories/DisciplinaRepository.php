@@ -115,6 +115,28 @@ class DisciplinaRepository
                   ->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
+    public function hasTurmas(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM turmas WHERE disciplina_id = :id');
+        $stmt->execute([':id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function hasAgendamentos(int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM agendamentos WHERE disciplina_id = :id AND status != 'cancelado'"
+        );
+        $stmt->execute([':id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function hardDelete(int $id): void
+    {
+        $this->pdo->prepare('DELETE FROM turma_disciplina WHERE disciplina_id = :id')->execute([':id' => $id]);
+        $this->pdo->prepare('DELETE FROM disciplinas WHERE id = :id')->execute([':id' => $id]);
+    }
+
     /**
      * Retorna disciplinas com seus professores vinculados — usado pelo otimizador.
      */

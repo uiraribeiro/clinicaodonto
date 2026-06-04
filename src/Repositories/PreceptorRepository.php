@@ -147,6 +147,29 @@ class PreceptorRepository
         )->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
+    public function toggleAtivo(int $id, int $usuarioId): void
+    {
+        $this->pdo->prepare(
+            'UPDATE preceptores SET ativo = NOT ativo, updated_by = :uid WHERE id = :id'
+        )->execute([':uid' => $usuarioId, ':id' => $id]);
+    }
+
+    public function hasAgendamentos(int $id): bool
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM agendamentos WHERE preceptor_id = :id AND status != 'cancelado'"
+        );
+        $stmt->execute([':id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function hardDelete(int $id): void
+    {
+        $this->pdo->prepare('DELETE FROM preceptor_disponibilidade WHERE preceptor_id = :id')->execute([':id' => $id]);
+        $this->pdo->prepare('DELETE FROM preceptor_disciplina WHERE preceptor_id = :id')->execute([':id' => $id]);
+        $this->pdo->prepare('DELETE FROM preceptores WHERE id = :id')->execute([':id' => $id]);
+    }
+
     /**
      * Apaga todas as disponibilidades do preceptor e recria a partir do array fornecido.
      * Cada item deve conter: dia_semana, hora_inicio, hora_fim, semana_inicio, semana_fim.

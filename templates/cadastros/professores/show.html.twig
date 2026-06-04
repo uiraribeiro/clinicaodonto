@@ -24,6 +24,23 @@
         <a href="/cadastros/professores/{{ professor.id }}/editar" class="btn btn-primary">
             <i class="bi bi-pencil me-2"></i>Editar
         </a>
+        <form action="/cadastros/professores/{{ professor.id }}/desativar" method="POST" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="btn btn-outline-warning"
+                    data-confirm="{{ professor.ativo ? 'Desativar o professor ' ~ professor.nome|e ~ '?' : 'Ativar o professor ' ~ professor.nome|e ~ '?' }}">
+                <i class="bi {{ professor.ativo ? 'bi-person-x' : 'bi-person-check' }} me-1"></i>
+                {{ professor.ativo ? 'Desativar' : 'Ativar' }}
+            </button>
+        </form>
+        <form action="/cadastros/professores/{{ professor.id }}/excluir" method="POST" class="d-inline">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="btn btn-danger"
+                    data-confirm="Excluir permanentemente o professor {{ professor.nome|e }}? Esta ação não pode ser desfeita.">
+                <i class="bi bi-trash me-1"></i>Excluir
+            </button>
+        </form>
     </div>
 </div>
 
