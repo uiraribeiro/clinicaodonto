@@ -121,6 +121,12 @@ class DisciplinaRepository
                   ->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
+    public function toggleAtivo(int $id, int $usuarioId): void
+    {
+        $this->pdo->prepare('UPDATE disciplinas SET ativo = NOT ativo, updated_by = :uid WHERE id = :id')
+                  ->execute([':uid' => $usuarioId, ':id' => $id]);
+    }
+
     public function countTurmas(int $id): int
     {
         $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM turmas WHERE disciplina_id = :id');

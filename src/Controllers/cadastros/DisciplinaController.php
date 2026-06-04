@@ -133,6 +133,20 @@ class DisciplinaController
         return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
     }
 
+    public function toggleAtivo(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
+    {
+        $id         = (int) $id;
+        $disciplina = $this->repo->findById($id);
+        if (!$disciplina) {
+            return $response->withStatus(404);
+        }
+        $this->repo->toggleAtivo($id, (int) ($_SESSION['usuario_id'] ?? 0));
+        $_SESSION['flash_success'] = $disciplina['ativo']
+            ? 'Disciplina desativada com sucesso.'
+            : 'Disciplina ativada com sucesso.';
+        return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
+    }
+
     public function destroy(ServerRequestInterface $request, ResponseInterface $response, string $id): ResponseInterface
     {
         $id = (int) $id;

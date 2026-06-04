@@ -115,6 +115,15 @@
                             <a href="/cadastros/disciplinas/{{ d.id }}/editar" class="btn btn-outline-primary" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            <form action="/cadastros/disciplinas/{{ d.id }}/desativar" method="POST" class="d-inline">
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                                <button type="submit"
+                                        class="btn btn-outline-warning"
+                                        title="{{ d.ativo ? 'Desativar' : 'Ativar' }}"
+                                        data-confirm="{{ d.ativo ? 'Desativar a disciplina ' ~ d.nome|e ~ '?' : 'Ativar a disciplina ' ~ d.nome|e ~ '?' }}">
+                                    <i class="bi {{ d.ativo ? 'bi-toggle-on' : 'bi-toggle-off' }}"></i>
+                                </button>
+                            </form>
                             {% if d.num_turmas > 0 %}
                             <button type="button"
                                     class="btn btn-outline-danger"

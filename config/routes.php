@@ -48,6 +48,7 @@ $app->group('', function ($group) {
         $c->get('/disciplinas/{id}',      [DisciplinaController::class, 'show'])->setName('disciplinas.show');
         $c->get('/disciplinas/{id}/editar',[DisciplinaController::class, 'edit'])->setName('disciplinas.edit');
         $c->post('/disciplinas/{id}',     [DisciplinaController::class, 'update'])->setName('disciplinas.update');
+        $c->post('/disciplinas/{id}/desativar',[DisciplinaController::class, 'toggleAtivo'])->setName('disciplinas.toggle');
         $c->post('/disciplinas/{id}/excluir',[DisciplinaController::class, 'destroy'])->setName('disciplinas.destroy');
 
         // Professores
