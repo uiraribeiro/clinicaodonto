@@ -141,9 +141,7 @@ class DisciplinaRepository
 
     public function hasAgendamentos(int $id): bool
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT COUNT(*) FROM agendamentos WHERE disciplina_id = :id AND status != 'cancelado'"
-        );
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM agendamentos WHERE disciplina_id = :id');
         $stmt->execute([':id' => $id]);
         return (int) $stmt->fetchColumn() > 0;
     }

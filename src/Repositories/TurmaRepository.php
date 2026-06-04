@@ -205,6 +205,26 @@ class TurmaRepository
         )->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
+    public function toggleAtivo(int $id, int $usuarioId): void
+    {
+        $this->pdo->prepare(
+            'UPDATE turmas SET ativo = NOT ativo, updated_by = :uid WHERE id = :id'
+        )->execute([':uid' => $usuarioId, ':id' => $id]);
+    }
+
+    public function hasAgendamentos(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM agendamentos WHERE turma_id = :id');
+        $stmt->execute([':id' => $id]);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function hardDelete(int $id): void
+    {
+        // turma_disciplina cascades; agendamentos verified before calling
+        $this->pdo->prepare('DELETE FROM turmas WHERE id = :id')->execute([':id' => $id]);
+    }
+
     /**
      * Apaga todos os vínculos turma_disciplina da turma no semestre informado
      * e recria a partir do array fornecido.

@@ -156,9 +156,7 @@ class PreceptorRepository
 
     public function hasAgendamentos(int $id): bool
     {
-        $stmt = $this->pdo->prepare(
-            "SELECT COUNT(*) FROM agendamentos WHERE preceptor_id = :id AND status != 'cancelado'"
-        );
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM agendamentos WHERE preceptor_id = :id');
         $stmt->execute([':id' => $id]);
         return (int) $stmt->fetchColumn() > 0;
     }

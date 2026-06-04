@@ -95,6 +95,7 @@ $app->group('', function ($group) {
         $c->get('/turmas/{id}',           [TurmaController::class, 'show'])->setName('turmas.show');
         $c->get('/turmas/{id}/editar',    [TurmaController::class, 'edit'])->setName('turmas.edit');
         $c->post('/turmas/{id}',          [TurmaController::class, 'update'])->setName('turmas.update');
+        $c->post('/turmas/{id}/desativar',[TurmaController::class, 'toggleAtivo'])->setName('turmas.toggle');
         $c->post('/turmas/{id}/excluir',  [TurmaController::class, 'destroy'])->setName('turmas.destroy');
 
         // Horários disponíveis

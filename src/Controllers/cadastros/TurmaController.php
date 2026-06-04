@@ -56,13 +56,19 @@ class TurmaController
             ? $this->semestreRepo->findByReferencia($semestreRef)
             : $this->semestreRepo->findAtivo();
 
+        $flashSuccess = $_SESSION['flash_success'] ?? null;
+        $flashError   = $_SESSION['flash_error']   ?? null;
+        unset($_SESSION['flash_success'], $_SESSION['flash_error']);
+
         return $this->twig->render(
             $response,
             'cadastros/turmas/index.html.twig',
             $this->ctx([
-                'turmas'       => $turmas,
-                'semestre'     => $semestre,
-                'semestre_ref' => $semestreRef,
+                'turmas'        => $turmas,
+                'semestre'      => $semestre,
+                'semestre_ref'  => $semestreRef,
+                'flash_success' => $flashSuccess,
+                'flash_error'   => $flashError,
             ])
         );
     }
@@ -252,14 +258,35 @@ class TurmaController
         return $response->withHeader('Location', '/cadastros/turmas')->withStatus(302);
     }
 
+    public function toggleAtivo(
+        ServerRequestInterface $request,
+        ResponseInterface $response,
+        string $id
+    ): ResponseInterface {
+        $id    = (int) $id;
+        $turma = $this->repo->findById($id);
+        if (!$turma) {
+            return $response->withStatus(404);
+        }
+        $this->repo->toggleAtivo($id, (int) ($_SESSION['usuario_id'] ?? 0));
+        $_SESSION['flash_success'] = $turma['ativo']
+            ? 'Turma desativada com sucesso.'
+            : 'Turma ativada com sucesso.';
+        return $response->withHeader('Location', '/cadastros/turmas')->withStatus(302);
+    }
+
     public function destroy(
         ServerRequestInterface $request,
         ResponseInterface $response,
         string $id
     ): ResponseInterface {
         $id = (int) $id;
-        $this->repo->softDelete($id, (int) ($_SESSION['usuario_id'] ?? 0));
-        $_SESSION['flash_success'] = 'Turma desativada com sucesso.';
+        if ($this->repo->hasAgendamentos($id)) {
+            $_SESSION['flash_error'] = 'Não é possível excluir: esta turma possui agendamentos vinculados.';
+            return $response->withHeader('Location', '/cadastros/turmas')->withStatus(302);
+        }
+        $this->repo->hardDelete($id);
+        $_SESSION['flash_success'] = 'Turma excluída com sucesso.';
         return $response->withHeader('Location', '/cadastros/turmas')->withStatus(302);
     }
 }
