@@ -127,6 +127,33 @@ Horários por turno:
 ### Integração Bedrock (tool use)
 `BedrockClient::invocarComTools()` implementa o loop de tool use da Amazon Nova Lite (até 6 iterações). As 6 ferramentas estão em `AgendaTools`. Todo resultado de ferramenta passa pelo `RuleValidator` antes de ser apresentado. Nenhuma sugestão é aplicada sem aprovação humana explícita (rota `POST /ia/proposta/aplicar`).
 
+## Padrão de CRUD nos cadastros
+
+Todos os cadastros (disciplinas, turmas, professores, preceptores) seguem o mesmo padrão de ações:
+
+### Rotas por entidade
+```
+GET    /cadastros/{entidade}              → index
+GET    /cadastros/{entidade}/novo         → create
+POST   /cadastros/{entidade}              → store
+GET    /cadastros/{entidade}/{id}         → show
+GET    /cadastros/{entidade}/{id}/editar  → edit
+POST   /cadastros/{entidade}/{id}         → update
+POST   /cadastros/{entidade}/{id}/desativar → toggleAtivo  ← toggle ativo/inativo
+POST   /cadastros/{entidade}/{id}/excluir   → destroy      ← hard delete com verificação
+```
+
+### Regras de exclusão (hard delete)
+- **Disciplinas**: bloqueado se existirem turmas (`turmas.disciplina_id`) ou agendamentos vinculados. A lista exibe badge com contagem de turmas; botão fica `disabled` quando há turmas.
+- **Turmas**: bloqueado se existirem agendamentos vinculados. `turma_disciplina` cascades automaticamente.
+- **Professores**: bloqueado se existirem agendamentos vinculados. `professor_disponibilidade` e `professor_disciplina` cascades.
+- **Preceptores**: bloqueado se existirem agendamentos vinculados. `preceptor_disponibilidade` e `preceptor_disciplina` cascades.
+
+`hasAgendamentos()` verifica **todos** os status (incluindo cancelados) — o FK é NO ACTION e bloqueia qualquer registro.
+
+### Flash messages
+Controllers de index devem sempre passar `flash_success` e `flash_error` da sessão ao template (e fazer `unset` após ler). O layout base (`templates/layout/base.html.twig`) já renderiza os alertas se as variáveis estiverem definidas.
+
 ## Migrations
 
 ```bash
@@ -151,7 +178,7 @@ docker compose exec php php bin/migrate.php
 ## Fases de implementação
 
 - **Fase 1** ✅ — Fundação: estrutura, Docker, auth, migrations
-- **Fase 2** ✅ (parcial) — Cadastros CRUD: disciplinas, turmas, professores, preceptores, clínicas, laboratórios, semestres
+- **Fase 2** ✅ — Cadastros CRUD completos: disciplinas, turmas, professores, preceptores, clínicas, laboratórios, semestres (com toggle ativo/inativo e hard delete com verificação de dependências)
 - **Fase 3** ✅ — Motor de otimização (backtracking + propagação de restrições + editor manual por semana)
 - **Fase 4** — Dashboard (semanal, diário, mensal, indicadores)
 - **Fase 5** ✅ (parcial) — Integração Amazon Bedrock: sugestões + chat com tool use (Nova Lite)
