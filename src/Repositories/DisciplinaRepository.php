@@ -11,10 +11,16 @@ class DisciplinaRepository
 
     public function findAll(bool $apenasAtivas = false): array
     {
-        $where = $apenasAtivas ? 'WHERE ativo = 1' : '';
-        $stmt  = $this->pdo->query(
-            "SELECT * FROM disciplinas {$where} ORDER BY prioridade, nome"
-        );
+        $where = $apenasAtivas ? 'WHERE d.ativo = 1' : '';
+        $stmt  = $this->pdo->query("
+            SELECT d.*,
+                COUNT(DISTINCT t.id) AS num_turmas
+            FROM disciplinas d
+            LEFT JOIN turmas t ON t.disciplina_id = d.id
+            {$where}
+            GROUP BY d.id
+            ORDER BY d.prioridade, d.nome
+        ");
         return $stmt->fetchAll();
     }
 
@@ -115,11 +121,16 @@ class DisciplinaRepository
                   ->execute([':uid' => $usuarioId, ':id' => $id]);
     }
 
-    public function hasTurmas(int $id): bool
+    public function countTurmas(int $id): int
     {
         $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM turmas WHERE disciplina_id = :id');
         $stmt->execute([':id' => $id]);
-        return (int) $stmt->fetchColumn() > 0;
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function hasTurmas(int $id): bool
+    {
+        return $this->countTurmas($id) > 0;
     }
 
     public function hasAgendamentos(int $id): bool

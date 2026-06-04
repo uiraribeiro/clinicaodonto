@@ -137,8 +137,9 @@ class DisciplinaController
     {
         $id = (int) $id;
 
-        if ($this->repo->hasTurmas($id)) {
-            $_SESSION['flash_error'] = 'Não é possível excluir: existem turmas vinculadas a esta disciplina.';
+        $numTurmas = $this->repo->countTurmas($id);
+        if ($numTurmas > 0) {
+            $_SESSION['flash_error'] = "Não é possível excluir: esta disciplina possui {$numTurmas} turma(s) vinculada(s). Exclua as turmas primeiro.";
             return $response->withHeader('Location', '/cadastros/disciplinas')->withStatus(302);
         }
 

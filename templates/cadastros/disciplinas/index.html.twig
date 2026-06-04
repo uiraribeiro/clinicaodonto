@@ -57,7 +57,7 @@
                         <th>Tipo</th>
                         <th>Espaço</th>
                         <th class="text-center">Carga (h)</th>
-                        <th class="text-center">Prioridade</th>
+                        <th class="text-center">Turmas</th>
                         <th class="text-center">Status</th>
                         <th class="text-end">Ações</th>
                     </tr>
@@ -94,9 +94,13 @@
                     </td>
                     <td class="text-center">{{ d.carga_horaria_pratica }}h</td>
                     <td class="text-center">
-                        <span class="badge {{ d.prioridade <= 3 ? 'bg-danger' : (d.prioridade <= 6 ? 'bg-warning text-dark' : 'bg-secondary') }}">
-                            {{ d.prioridade }}
+                        {% if d.num_turmas > 0 %}
+                        <span class="badge bg-warning text-dark" title="{{ d.num_turmas }} turma(s) vinculada(s)">
+                            {{ d.num_turmas }}
                         </span>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
                     </td>
                     <td class="text-center">
                         <span class="badge {{ d.ativo ? 'bg-success' : 'bg-secondary' }}">
@@ -111,15 +115,24 @@
                             <a href="/cadastros/disciplinas/{{ d.id }}/editar" class="btn btn-outline-primary" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            {% if d.num_turmas > 0 %}
+                            <button type="button"
+                                    class="btn btn-outline-danger"
+                                    disabled
+                                    title="Não é possível excluir: {{ d.num_turmas }} turma(s) vinculada(s)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% else %}
                             <form action="/cadastros/disciplinas/{{ d.id }}/excluir" method="POST" class="d-inline">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                                 <button type="submit"
                                         class="btn btn-outline-danger"
-                                        title="Desativar"
-                                        data-confirm="Desativar a disciplina {{ d.nome|e }}?">
+                                        title="Excluir disciplina"
+                                        data-confirm="Excluir permanentemente a disciplina {{ d.nome|e }}? Esta ação não pode ser desfeita.">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
