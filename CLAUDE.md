@@ -37,6 +37,24 @@ docker compose exec php php bin/seed.php
 
 Credenciais padrão após seed: `admin@odonto.local` / `Admin@1234`
 
+## Deploy em produção
+
+O servidor de produção é `universobh`, acessível via bastion `10.8.0.1`. O projeto fica em `/certificacao/clinicaodonto/`. O código é volume-montado (`.:/var/www/html`), então um `git pull` reflete imediatamente — sem rebuild de container.
+
+```bash
+# Deploy via git pull (comando único a partir da máquina local)
+ssh -i ~/Documents/uribeiro.pem ec2-user@10.8.0.1 \
+  'ssh -i ~/challenge.pem ec2-user@universobh \
+  "cd /certificacao/clinicaodonto && sudo git pull"'
+```
+
+Migrations em produção (quando houver mudança de schema):
+```bash
+ssh -i ~/Documents/uribeiro.pem ec2-user@10.8.0.1 \
+  'ssh -i ~/challenge.pem ec2-user@universobh \
+  "cd /certificacao/clinicaodonto && sudo docker compose exec php php bin/migrate.php"'
+```
+
 ## Regras de desenvolvimento obrigatórias
 
 ### Segurança
@@ -56,6 +74,7 @@ Credenciais padrão após seed: `admin@odonto.local` / `Admin@1234`
 - Seeds em `database/seeds/` com dados de exemplo reais.
 - Toda tabela de negócio tem: `created_at`, `updated_at`, `created_by`, `updated_by`.
 - Tabelas críticas têm espelho em `audit_logs` (INSERT/UPDATE/DELETE).
+- **NUNCA** usar o mesmo parâmetro nomeado PDO mais de uma vez na mesma query. O PDO está configurado com `ATTR_EMULATE_PREPARES => false` (prepared statements nativos), que proíbe parâmetros duplicados. Se precisar do mesmo valor duas vezes, use `:param` e `:param2` com o mesmo valor no `execute()`.
 
 ### Otimizador
 - O `ScheduleOptimizer` é **determinístico**. Nenhuma aleatoriedade.
