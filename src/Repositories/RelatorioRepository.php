@@ -81,11 +81,11 @@ class RelatorioRepository
              FROM semanas_semestre ss
              LEFT JOIN agendamentos a ON a.semana_id = ss.id
                  AND a.versao_id = :vid AND a.status != "cancelado"
-             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid)
+             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid2)
              GROUP BY ss.numero_semana, ss.data_inicio, ss.data_fim
              ORDER BY ss.numero_semana'
         );
-        $stmt->execute([':vid' => $versaoId]);
+        $stmt->execute([':vid' => $versaoId, ':vid2' => $versaoId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -216,12 +216,12 @@ class RelatorioRepository
              CROSS JOIN semanas_semestre ss
              LEFT JOIN agendamentos a ON a.espaco_tipo = "clinica" AND a.espaco_id = c.id
                  AND a.semana_id = ss.id AND a.versao_id = :vid AND a.status != "cancelado"
-             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid)
+             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid2)
                AND c.ativo = 1
              GROUP BY ss.numero_semana, ss.data_inicio, c.id, c.nome, capacidade
              ORDER BY c.id, ss.numero_semana'
         );
-        $stmtC->execute([':vid' => $versaoId]);
+        $stmtC->execute([':vid' => $versaoId, ':vid2' => $versaoId]);
 
         $stmtL = $this->pdo->prepare(
             'SELECT ss.numero_semana, ss.data_inicio,
@@ -235,12 +235,12 @@ class RelatorioRepository
              CROSS JOIN semanas_semestre ss
              LEFT JOIN agendamentos a ON a.espaco_tipo = "laboratorio" AND a.espaco_id = l.id
                  AND a.semana_id = ss.id AND a.versao_id = :vid AND a.status != "cancelado"
-             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid)
+             WHERE ss.semestre_id = (SELECT semestre_id FROM agenda_versoes WHERE id = :vid2)
                AND l.ativo = 1
              GROUP BY ss.numero_semana, ss.data_inicio, l.id, l.nome, capacidade
              ORDER BY l.id, ss.numero_semana'
         );
-        $stmtL->execute([':vid' => $versaoId]);
+        $stmtL->execute([':vid' => $versaoId, ':vid2' => $versaoId]);
 
         return [
             'clinicas'     => $stmtC->fetchAll(PDO::FETCH_ASSOC),
