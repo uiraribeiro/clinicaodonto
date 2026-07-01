@@ -271,12 +271,14 @@ final class AgendaService
     private function turnoDeHora(string $hora): string
     {
         $h = (int)substr($hora, 0, 2);
-        if ($h < 13) {
-            return 'manha';
-        }
-        if ($h < 19) {
-            return 'tarde';
-        }
+        $m = (int)substr($hora, 3, 2);
+        $minutos = $h * 60 + $m;
+
+        if ($minutos < 9 * 60 + 20)  return 'matutino1';   // antes de 9:20
+        if ($minutos < 10 * 60 + 10) return 'manha';        // 9:20 – 10:09
+        if ($minutos < 13 * 60)      return 'matutino2';    // 10:10 – 12:59
+        if ($minutos < 16 * 60 + 10) return 'tarde';        // 13:10 – 16:09
+        if ($minutos < 19 * 60 + 15) return 'vespertino';   // 16:10 – 19:14
         return 'noturno';
     }
 

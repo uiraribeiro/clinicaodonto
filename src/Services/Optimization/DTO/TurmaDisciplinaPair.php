@@ -29,7 +29,7 @@ final class TurmaDisciplinaPair
         public readonly ?int    $professorId,
         public readonly ?int    $preceptorId,
         public readonly string  $semestreRef,
-        public readonly string  $turno = 'manha',       // manha | tarde | noturno
+        public readonly string  $turno = 'manha',       // matutino1 | matutino2 | manha | tarde | vespertino | noturno
         public readonly ?int    $diaSemanaPreferencial = null, // 1=seg...6=sáb, null=sem preferência
     ) {}
 

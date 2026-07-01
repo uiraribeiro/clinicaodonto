@@ -76,8 +76,22 @@ final class ConstraintPropagator
         $ultimaSemana = empty($semanasUsadas) ? 0 : max($semanasUsadas);
 
         // Intervalos de hora de início por turno (para comparação rápida)
-        $turnoHoraInicio = ['manha' => '06:00:00', 'tarde' => '13:00:00', 'noturno' => '19:00:00'];
-        $turnoHoraFim    = ['manha' => '12:59:59', 'tarde' => '18:59:59', 'noturno' => '23:59:59'];
+        $turnoHoraInicio = [
+            'matutino1'  => '07:40:00',
+            'matutino2'  => '10:10:00',
+            'manha'      => '09:20:00',
+            'tarde'      => '13:10:00',
+            'vespertino' => '16:10:00',
+            'noturno'    => '19:15:00',
+        ];
+        $turnoHoraFim = [
+            'matutino1'  => '10:10:00',
+            'matutino2'  => '12:40:00',
+            'manha'      => '12:00:00',
+            'tarde'      => '15:55:00',
+            'vespertino' => '18:40:00',
+            'noturno'    => '21:30:00',
+        ];
         $turnoAlvo       = $pair->turno ?? 'manha';
         $diaAlvo         = $pair->diaSemanaPreferencial;
 

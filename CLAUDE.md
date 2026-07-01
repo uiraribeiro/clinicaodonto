@@ -139,9 +139,12 @@ A tabela `turma_disciplina` é gerenciada automaticamente via `TurmaRepository::
 Definidos na turma (`turmas.turno`, `turmas.dia_semana_preferencial`). O otimizador usa esses valores como soft-constraint (prioridade, não bloqueio). Se não houver slot disponível no turno/dia preferencial, aloca em outro.
 
 Horários por turno:
-- **manhã**: 09:20 – 12:05
+- **matutino1**: 07:40 – 10:10
+- **matutino2**: 10:10 – 12:40
+- **manhã**: 09:20 – 12:00
 - **tarde**: 13:10 – 15:55
-- **noturno**: 19:15 – 22:00
+- **vespertino**: 16:10 – 18:40
+- **noturno**: 19:15 – 21:30
 
 ### Integração Bedrock (tool use)
 `BedrockClient::invocarComTools()` implementa o loop de tool use da Amazon Nova Lite (até 6 iterações). As 6 ferramentas estão em `AgendaTools`. Todo resultado de ferramenta passa pelo `RuleValidator` antes de ser apresentado. Nenhuma sugestão é aplicada sem aprovação humana explícita (rota `POST /ia/proposta/aplicar`).

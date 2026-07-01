@@ -124,9 +124,12 @@
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Turno <span class="text-danger">*</span></label>
                         <select name="turno" class="form-select {{ errors.turno is defined ? 'is-invalid' : '' }}" required>
-                            <option value="manha"   {{ turma.turno|default('manha') == 'manha'   ? 'selected' : '' }}>Manhã (9:20 – 12:05)</option>
-                            <option value="tarde"   {{ turma.turno|default('') == 'tarde'   ? 'selected' : '' }}>Tarde (13:10 – 15:55)</option>
-                            <option value="noturno" {{ turma.turno|default('') == 'noturno' ? 'selected' : '' }}>Noturno (19:15 – 22:00)</option>
+                            <option value="matutino1"  {{ turma.turno|default('manha') == 'matutino1'  ? 'selected' : '' }}>Matutino I (7:40 – 10:10)</option>
+                            <option value="matutino2"  {{ turma.turno|default('') == 'matutino2'  ? 'selected' : '' }}>Matutino II (10:10 – 12:40)</option>
+                            <option value="manha"      {{ turma.turno|default('') == 'manha'      ? 'selected' : '' }}>Manhã (9:20 – 12:00)</option>
+                            <option value="tarde"      {{ turma.turno|default('') == 'tarde'      ? 'selected' : '' }}>Tarde (13:10 – 15:55)</option>
+                            <option value="vespertino" {{ turma.turno|default('') == 'vespertino' ? 'selected' : '' }}>Vespertino (16:10 – 18:40)</option>
+                            <option value="noturno"    {{ turma.turno|default('') == 'noturno'    ? 'selected' : '' }}>Noturno (19:15 – 21:30)</option>
                         </select>
                         <div class="form-text">Horário padrão das aulas práticas da turma.</div>
                         {% if errors.turno is defined %}

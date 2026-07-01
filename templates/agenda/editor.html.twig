@@ -67,10 +67,38 @@
 </div>
 
 {# ── Grade semanal por turnos ── #}
-{% set turnos = {'manha': 'Manhã (9:20–12:05)', 'tarde': 'Tarde (13:10–15:55)', 'noturno': 'Noturno (19:15–22:00)'} %}
-{% set turno_hora = {'manha': '09:20', 'tarde': '13:10', 'noturno': '19:15'} %}
-{% set turno_fim  = {'manha': '12:05', 'tarde': '15:55', 'noturno': '22:00'} %}
-{% set turno_class = {'manha': 'bg-info-subtle border-info', 'tarde': 'bg-warning-subtle border-warning', 'noturno': 'bg-dark-subtle border-dark'} %}
+{% set turnos = {
+    'matutino1':  'Matutino I (7:40–10:10)',
+    'matutino2':  'Matutino II (10:10–12:40)',
+    'manha':      'Manhã (9:20–12:00)',
+    'tarde':      'Tarde (13:10–15:55)',
+    'vespertino': 'Vespertino (16:10–18:40)',
+    'noturno':    'Noturno (19:15–21:30)'
+} %}
+{% set turno_hora = {
+    'matutino1':  '07:40',
+    'matutino2':  '10:10',
+    'manha':      '09:20',
+    'tarde':      '13:10',
+    'vespertino': '16:10',
+    'noturno':    '19:15'
+} %}
+{% set turno_fim = {
+    'matutino1':  '10:10',
+    'matutino2':  '12:40',
+    'manha':      '12:00',
+    'tarde':      '15:55',
+    'vespertino': '18:40',
+    'noturno':    '21:30'
+} %}
+{% set turno_class = {
+    'matutino1':  'bg-success-subtle border-success',
+    'matutino2':  'bg-info-subtle border-info',
+    'manha':      'bg-primary-subtle border-primary',
+    'tarde':      'bg-warning-subtle border-warning',
+    'vespertino': 'bg-orange-subtle border-orange',
+    'noturno':    'bg-dark-subtle border-dark'
+} %}
 
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-0">
@@ -81,7 +109,7 @@
                         <th style="width:100px" class="align-middle text-center small">Dia</th>
                         {% for turno_key, turno_label in turnos %}
                             <th class="text-center small {{ turno_class[turno_key] }}">
-                                <i class="bi bi-sun{% if turno_key == 'tarde' %}-fill{% elseif turno_key == 'noturno' %}-moon-stars-fill{% else %}-rise{% endif %} me-1"></i>
+                                <i class="bi bi-{% if turno_key == 'matutino1' %}sunrise{% elseif turno_key == 'matutino2' %}sun-rise{% elseif turno_key == 'manha' %}sun{% elseif turno_key == 'tarde' %}sun-fill{% elseif turno_key == 'vespertino' %}sunset{% else %}moon-stars-fill{% endif %} me-1"></i>
                                 {{ turno_label }}
                             </th>
                         {% endfor %}

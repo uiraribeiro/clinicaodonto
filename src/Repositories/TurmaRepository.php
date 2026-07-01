@@ -268,7 +268,7 @@ class TurmaRepository
                 continue;
             }
 
-            $turnoValido = in_array($disc['turno'] ?? '', ['manha', 'tarde', 'noturno'], true)
+            $turnoValido = in_array($disc['turno'] ?? '', ['matutino1', 'matutino2', 'manha', 'tarde', 'vespertino', 'noturno'], true)
                 ? $disc['turno']
                 : null;
 

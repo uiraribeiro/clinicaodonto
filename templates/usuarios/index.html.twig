@@ -11,7 +11,7 @@
 <div
     x-data="{
         filtro: '',
-        usuarios: {{ usuarios | json_encode | raw }},
+        usuarios: {{ usuarios | json_encode | e('html_attr') }},
         get filtrados() {
             const q = this.filtro.toLowerCase().trim();
             if (!q) return this.usuarios;
