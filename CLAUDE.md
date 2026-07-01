@@ -48,6 +48,13 @@ ssh -i ~/Documents/uribeiro.pem ec2-user@10.8.0.1 \
   "cd /certificacao/clinicaodonto && sudo git pull"'
 ```
 
+**Sempre que alterar templates Twig**, limpe o cache compilado logo após o pull (em produção `APP_DEBUG=false` o Twig cacheia em `storage/cache/`):
+```bash
+ssh -i ~/Documents/uribeiro.pem ec2-user@10.8.0.1 \
+  'ssh -i ~/challenge.pem ec2-user@universobh \
+  "rm -rf /certificacao/clinicaodonto/storage/cache/*"'
+```
+
 Migrations em produção (quando houver mudança de schema):
 ```bash
 ssh -i ~/Documents/uribeiro.pem ec2-user@10.8.0.1 \
